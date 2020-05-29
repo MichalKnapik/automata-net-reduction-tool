@@ -31,7 +31,12 @@ typedef struct TRANSITION {
   struct TRANSITION* prev;  
 } transition, *transition_ptr;
 
+typedef char auto_flags;
+#define AUTOM_NONE 0x0
+#define AUTOM_INCIDENCE_OK 0x1
+
 typedef struct {
+  auto_flags flags;
   state_ptr states;
   parsed_transition_ptr parsed_transitions;
 } automaton, *automaton_ptr;

@@ -34,22 +34,34 @@ void free_automaton(automaton_ptr aut) { //todo - add freeing outgoing
 
 void display_automaton(automaton_ptr aut) {
 
-  printf("Automaton with states:\n");
+  printf("Automaton with states: ");
   state_ptr st = aut->states;
   while (st != NULL) {
-    printf("%s\n", st->name);
+    printf("%s ", st->name);
     st = st->next;
   }
 
-  printf("and parsed_transitions:\n");
+  printf("\nand parsed_transitions:\n");
   parsed_transition_ptr tr = aut->parsed_transitions;
   while (tr != NULL) {
     printf("(%s, %s, %s)\n", tr->source, tr->name, tr->target);
     tr = tr->next;
   }
 
-  printf("the incidence list:\n");
-  
+  printf("the incidence list:");
+  if (aut->flags & AUTOM_INCIDENCE_OK) {
+    st = aut->states;
+    while (st != NULL) {
+      printf("\n(%s): ", st->name);
+      transition_ptr tp = st->outgoing;
+
+      for (transition_ptr tp = st->outgoing; tp != NULL; tp = tp->next) {
+	printf(" %s (%s).", tp->name, tp->target->name);
+      }
+      st = st->next;
+    }
+  } else printf(" (not computed)");
+  printf("\n");
 }
 
 state_ptr get_state_by_name(automaton_ptr aut, char* state_name)
@@ -65,6 +77,7 @@ state_ptr get_state_by_name(automaton_ptr aut, char* state_name)
 
 bool collect_incidence_lists(automaton_ptr aut)
 {
+  aut->flags |= AUTOM_INCIDENCE_OK;
 
   for (parsed_transition_ptr pptr = aut->parsed_transitions;
        pptr != NULL; pptr = pptr->next) {
@@ -129,6 +142,7 @@ int main(int argc, char **argv)
  automaton_ptr last = autos[actr-1];
 
  collect_incidence_lists(last);
+ display_automaton(last);
  
  for (int i = 0; i < actr; ++i) free_automaton(autos[i]);
  

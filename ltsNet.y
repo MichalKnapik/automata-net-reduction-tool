@@ -42,6 +42,7 @@ component: STATES statelist TRANSITIONS translist
    automaton_ptr ap = (automaton_ptr) malloc(sizeof(automaton));
    ap->states = $2;
    ap->parsed_transitions = $4;
+   ap->flags = AUTOM_NONE;
    $$ = ap;
    root = ap;
  }
