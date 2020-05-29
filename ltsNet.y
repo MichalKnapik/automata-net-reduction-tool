@@ -5,9 +5,7 @@
 #include "automata_interface.h"
 #include "common.h"
 
-
 extern int yylineno;
-
 extern automaton_ptr root;
 %}
 

@@ -8,6 +8,8 @@ void yyrestart(FILE *input_file);
 
 #include "common.h"
 
+struct TRANSITION;
+
 typedef struct TR {
   char* source;
   char* name;
@@ -18,15 +20,25 @@ typedef struct TR {
 typedef struct STATE {
   char* name;
   struct STATE* next;
-  parsed_transition_ptr outgoing; //TODO
+  struct TRANSITION* outgoing; //TODO
 } state, *state_ptr;
+
+typedef struct TRANSITION {
+  state_ptr source;
+  char* name;
+  state_ptr target;
+  struct TRANSITION* next;
+  struct TRANSITION* prev;  
+} transition, *transition_ptr;
 
 typedef struct {
   state_ptr states;
   parsed_transition_ptr parsed_transitions;
 } automaton, *automaton_ptr;
 
-void free_automaton(automaton_ptr aut);
+void free_automaton(automaton_ptr aut); //add freeing outgoing
 void display_automaton(automaton_ptr aut);
+state_ptr get_state_by_name(automaton_ptr aut, char* state_name);
+bool collect_incidence_lists(automaton_ptr aut);
 
 #endif

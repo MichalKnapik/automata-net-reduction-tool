@@ -8,8 +8,6 @@
 #include "automata_interface.h"
 #include "ltsNet.tab.h"
 #include "common.h"
-
-#define MAXTOKENLENGTH 200
 %}
 
 /* abbrev defns */
