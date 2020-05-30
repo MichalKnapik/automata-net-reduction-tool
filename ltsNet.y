@@ -43,6 +43,8 @@ component: STATES statelist TRANSITIONS translist
    ap->states = $2;
    ap->parsed_transitions = $4;
    ap->flags = AUTOM_NONE;
+   ap->next = NULL;
+   ap->prev = NULL;
    $$ = ap;
    root = ap;
  }

@@ -10,6 +10,7 @@ void yyrestart(FILE *input_file);
 
 struct TRANSITION;
 
+/* Auxiliary: a helper in parsing. */
 typedef struct TR {
   char* source;
   char* name;
@@ -17,12 +18,15 @@ typedef struct TR {
   struct TR* next;
 } parsed_transition, *parsed_transition_ptr;
 
+/* An unidirectional list of states in an automaton. The outgoing 
+   transitions list is filled with collect_incidence_lists(.) call. */
 typedef struct STATE {
   char* name;
   struct STATE* next;
   struct TRANSITION* outgoing;
 } state, *state_ptr;
 
+/* A bidirectional list of all the transitions in an automaton. */
 typedef struct TRANSITION {
   state_ptr source;
   char* name;
@@ -35,10 +39,13 @@ typedef char auto_flags;
 #define AUTOM_NONE 0x0
 #define AUTOM_INCIDENCE_OK 0x1
 
-typedef struct {
-  auto_flags flags;
-  state_ptr states;
+/* A bidirectional list of all the automata in a network. */
+typedef struct AUTOMATON {
+  auto_flags flags; //see defns below auto_flags typedef
+  state_ptr states; //call collect_incidence_lists(.) to build transitions
   parsed_transition_ptr parsed_transitions;
+  struct AUTOMATON* next;
+  struct AUTOMATON* prev;  
 } automaton, *automaton_ptr;
 
 typedef struct {
@@ -68,8 +75,12 @@ void clear_automaton(automaton_ptr aut); //clears all states of automaton
 
 void free_automaton(automaton_ptr aut);
 void display_automaton(automaton_ptr aut);
+void display_network(automaton_ptr aut);
 state_ptr get_state_by_name(automaton_ptr aut, char* state_name);
 bool collect_incidence_lists(automaton_ptr aut);
+
+/* Connects two nets of automata. */
+void add_automaton_to_network(automaton_ptr net, automaton_ptr new_automaton); 
 
 automaton_ptr read_automaton(char* fname);
 

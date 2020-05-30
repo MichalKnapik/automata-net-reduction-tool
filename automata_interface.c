@@ -73,8 +73,20 @@ void display_automaton(automaton_ptr aut) {
   printf("\n");
 }
 
-state_ptr get_state_by_name(automaton_ptr aut, char* state_name)
-{
+void display_network(automaton_ptr aut) {
+
+  automaton_ptr aptr = aut;
+  int ctr = 0;
+  while (aptr != NULL) {
+    printf("(%d)\n", ctr++);
+    display_automaton(aptr);
+    aptr = aptr->next;
+  }
+
+}
+
+state_ptr get_state_by_name(automaton_ptr aut, char* state_name) {
+
   state_ptr ptr = NULL;
 
   for (ptr = aut->states; ptr != NULL; ptr = ptr->next) {
@@ -84,8 +96,8 @@ state_ptr get_state_by_name(automaton_ptr aut, char* state_name)
   return ptr;
 }
 
-bool collect_incidence_lists(automaton_ptr aut)
-{
+bool collect_incidence_lists(automaton_ptr aut) {
+
   aut->flags |= AUTOM_INCIDENCE_OK;
 
   for (parsed_transition_ptr pptr = aut->parsed_transitions;
@@ -118,6 +130,11 @@ bool collect_incidence_lists(automaton_ptr aut)
     }
     
   }
+}
+
+void add_automaton_to_network(automaton_ptr net, automaton_ptr new_automaton) {
+  net->next = new_automaton;
+  new_automaton->prev = net;
 }
 
 automaton_ptr read_automaton(char* fname) {
@@ -173,15 +190,15 @@ synchro_array_ptr read_synchro_array(char* fname) {
 }
 
 void free_synchro_array(synchro_array_ptr sarr) {
+
   while(--(sarr->ctr) >= 0) free(sarr->actions[sarr->ctr]);
   free(sarr->actions);
   free(sarr);
+
 }
 
 int main(int argc, char **argv) {
 
- extern FILE* yyin;
- bool presult = 0;
  unsigned int ctr = 0;
  unsigned int ASIZE = 10;
  unsigned int actr = 0;
@@ -189,24 +206,22 @@ int main(int argc, char **argv) {
  
  while (true) {
 
-   if (ctr == argc - 1) break;
+   if (ctr == argc - 2) break;
    printf("Automaton (%d)\n", ctr);
 
    autos[actr++] = read_automaton(argv[++ctr]);
-
-   display_automaton(root);
-   
+   collect_incidence_lists(autos[actr-1]);
+   if (ctr > 1) add_automaton_to_network(autos[0], autos[actr-1]);
  }
 
- automaton_ptr last = autos[actr-2];
-
- synchro_array_ptr sarr = read_synchro_array(argv[ctr]);
-
- collect_incidence_lists(last);
- display_automaton(last);
+ display_network(autos[0]);
+ 
+ printf("*synchro array*\n");
+ synchro_array_ptr sarr = read_synchro_array(argv[ctr+1]);
 
  for(int i = 0; i < sarr->ctr; ++i) printf("%s\n", sarr->actions[i]);
  
  for (int i = 0; i < actr-1; ++i) free_automaton(autos[i]);
  free_synchro_array(sarr);
+
 }
