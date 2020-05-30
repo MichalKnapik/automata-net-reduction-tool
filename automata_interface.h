@@ -20,7 +20,7 @@ typedef struct TR {
 typedef struct STATE {
   char* name;
   struct STATE* next;
-  struct TRANSITION* outgoing; //TODO
+  struct TRANSITION* outgoing;
 } state, *state_ptr;
 
 typedef struct TRANSITION {
@@ -41,9 +41,39 @@ typedef struct {
   parsed_transition_ptr parsed_transitions;
 } automaton, *automaton_ptr;
 
-void free_automaton(automaton_ptr aut); //add freeing outgoing
+typedef struct {
+  char** actions;
+  int ctr;
+  int capacity;
+} synchro_array, *synchro_array_ptr;
+
+/* typedef struct {//todo */
+  
+/* } topology, *topology_ptr; */
+
+/* Przemyślenia:
+
+Może warto dodać możliwość markowania automatów w topologii
+i, podobnie, markowanie stanów w automacie. Czyli:
+
+void mark_automaton(automaton_ptr aut);
+void clear_topology(automaton_ptr aut); //clears all automata in topology
+void clear_topology(topology_ptr top);
+
+void mark_state(stateptr spt);
+void clear_state(stateptr spt);
+void clear_automaton(automaton_ptr aut); //clears all states of automaton
+
+ */
+
+void free_automaton(automaton_ptr aut);
 void display_automaton(automaton_ptr aut);
 state_ptr get_state_by_name(automaton_ptr aut, char* state_name);
 bool collect_incidence_lists(automaton_ptr aut);
+
+automaton_ptr read_automaton(char* fname);
+
+synchro_array_ptr read_synchro_array(char* fname);
+void free_synchro_array(synchro_array_ptr sarr); 
 
 #endif

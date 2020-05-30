@@ -6,13 +6,24 @@
 
 automaton_ptr root = NULL;
 
-void free_automaton(automaton_ptr aut) { //todo - add freeing outgoing
+void free_automaton(automaton_ptr aut) {
 
   state_ptr st = aut->states;
   state_ptr nexts = NULL;
+  transition_ptr tp,tnxt = NULL;
+
   while (st != NULL) {
     nexts = st->next;
     free(st->name);
+
+    tp = st->outgoing;
+    while (tp != NULL) {
+     tnxt = tp->next;
+     free(tp->name);
+     free(tp);
+     tp = tnxt;
+    }
+    
     free(st);
     st = nexts;
   }
@@ -29,7 +40,6 @@ void free_automaton(automaton_ptr aut) { //todo - add freeing outgoing
   }
 
   free(aut);
-
 }
 
 void display_automaton(automaton_ptr aut) {
@@ -48,14 +58,13 @@ void display_automaton(automaton_ptr aut) {
     tr = tr->next;
   }
 
+  transition_ptr tp = NULL;
   printf("the incidence list:");
   if (aut->flags & AUTOM_INCIDENCE_OK) {
     st = aut->states;
     while (st != NULL) {
       printf("\n(%s): ", st->name);
-      transition_ptr tp = st->outgoing;
-
-      for (transition_ptr tp = st->outgoing; tp != NULL; tp = tp->next) {
+      for (tp = st->outgoing; tp != NULL; tp = tp->next) {
 	printf(" %s (%s).", tp->name, tp->target->name);
       }
       st = st->next;
@@ -109,11 +118,67 @@ bool collect_incidence_lists(automaton_ptr aut)
     }
     
   }
-  
 }
 
-int main(int argc, char **argv)
-{
+automaton_ptr read_automaton(char* fname) {
+
+  extern FILE* yyin;
+
+   if((yyin = fopen(fname, "r")) == NULL) {
+     perror("an issue with reading models");
+     exit(1);
+   }
+
+   yyrestart(yyin);
+
+   automaton_ptr retv = NULL;
+   if (!yyparse()) retv = root;
+   if (!yyin) fclose(yyin);
+
+   return retv;
+}
+
+synchro_array_ptr read_synchro_array(char* fname) {
+
+  FILE* fin;
+  if ((fin = fopen(fname, "r")) == NULL) {
+     perror("an issue with reading synchronising actions");
+     exit(1);
+  }
+
+  char buffer[MAXTOKENLENGTH];
+  
+  int AINITSIZE = 10;
+  synchro_array_ptr arr = (synchro_array_ptr) malloc(sizeof(synchro_array));
+  arr->capacity = AINITSIZE;
+  arr->ctr = 0;
+  arr->actions = (char**) malloc(arr->capacity * sizeof(char*));
+
+  while (fgets(buffer, MAXTOKENLENGTH, fin)) {
+
+    if (strlen(buffer) >= 1) buffer[strlen(buffer)-1] = '\0';
+    if (arr->ctr == arr->capacity) {
+      arr->capacity *= arr->capacity;
+      char** new_act_array = (char**) malloc(arr->capacity * sizeof(char*));
+      memcpy(new_act_array, arr->actions, sizeof(char*) * arr->ctr);
+      free(arr->actions);
+      arr->actions = new_act_array;
+    }
+
+    arr->actions[(arr->ctr)++] = strndup(buffer, MAXTOKENLENGTH);
+  }
+
+  if (!fin) fclose(fin);
+  return arr;
+}
+
+void free_synchro_array(synchro_array_ptr sarr) {
+  while(--(sarr->ctr) >= 0) free(sarr->actions[sarr->ctr]);
+  free(sarr->actions);
+  free(sarr);
+}
+
+int main(int argc, char **argv) {
 
  extern FILE* yyin;
  bool presult = 0;
@@ -126,25 +191,22 @@ int main(int argc, char **argv)
 
    if (ctr == argc - 1) break;
    printf("Automaton (%d)\n", ctr);
-   
-   if((yyin = fopen(argv[++ctr], "r")) == NULL) {
-     perror("an issue with reading models");
-     exit(1);
-   }
 
-   yyrestart(yyin);
-   presult = yyparse();
-   autos[actr++] = root;
+   autos[actr++] = read_automaton(argv[++ctr]);
+
    display_automaton(root);
-   if (presult != 0) break;
    
  }
- automaton_ptr last = autos[actr-1];
+
+ automaton_ptr last = autos[actr-2];
+
+ synchro_array_ptr sarr = read_synchro_array(argv[ctr]);
 
  collect_incidence_lists(last);
  display_automaton(last);
- 
- for (int i = 0; i < actr; ++i) free_automaton(autos[i]);
- 
-}
 
+ for(int i = 0; i < sarr->ctr; ++i) printf("%s\n", sarr->actions[i]);
+ 
+ for (int i = 0; i < actr-1; ++i) free_automaton(autos[i]);
+ free_synchro_array(sarr);
+}
