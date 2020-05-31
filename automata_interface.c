@@ -131,6 +131,8 @@ bool collect_incidence_lists(automaton_ptr aut) {
     }
     
   }
+
+  return true;
 }
 
 void add_automaton_to_network(automaton_ptr net, automaton_ptr new_automaton) {

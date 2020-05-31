@@ -35,24 +35,46 @@ typedef struct TRANSITION {
   struct TRANSITION* prev;  
 } transition, *transition_ptr;
 
+/* An array of actions over which automata synchronise. */
+typedef struct {
+  char** actions;
+  int ctr;
+  int capacity;
+} synchro_array, *synchro_array_ptr;
+
+struct sync_link_ptr;
+
 typedef char auto_flags;
 #define AUTOM_NONE 0x0
 #define AUTOM_INCIDENCE_OK 0x1
 
 /* A bidirectional list of all the automata in a network. */
 typedef struct AUTOMATON {
+
   auto_flags flags; //see defns below auto_flags typedef
   state_ptr states; //call collect_incidence_lists(.) to build transitions
-  parsed_transition_ptr parsed_transitions;
-  struct AUTOMATON* next;
-  struct AUTOMATON* prev;
+
+  //navigate in the network
+  struct AUTOMATON* next; 
+  struct AUTOMATON* prev; 
+
+  //an array of synchronisation links with other automata
+  //(TODO)
+  struct sync_link_ptr* sync_links;
+  int sync_link_ctr;
+
+  parsed_transition_ptr parsed_transitions;  
+
 } automaton, *automaton_ptr;
 
+/* A synchronisation link. Array sync_action_names connects
+   the struct's owner with other via sync_action_names. */
+//(TODO)
 typedef struct {
-  char** actions;
-  int ctr;
-  int capacity;
-} synchro_array, *synchro_array_ptr;
+  automaton_ptr other; 
+  char** sync_action_names;
+  int sync_action_ctr;
+} sync_link, *sync_link_ptr;
 
 /* typedef struct {//todo */
   
@@ -79,8 +101,9 @@ void display_network(automaton_ptr aut);
 state_ptr get_state_by_name(automaton_ptr aut, char* state_name);
 bool collect_incidence_lists(automaton_ptr aut);
 
-/* Connects two nets of automata. */
-void add_automaton_to_network(automaton_ptr net, automaton_ptr new_automaton); 
+/* Connects two nets of automata. */ 
+void add_automaton_to_network(automaton_ptr net, automaton_ptr new_automaton); //TODO - dodać synchronizacje?
+void sync_automata(automaton_ptr fst, automaton_ptr snd); //TODO
 
 automaton_ptr read_automaton(char* fname);
 
