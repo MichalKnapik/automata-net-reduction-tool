@@ -45,7 +45,7 @@ typedef struct AUTOMATON {
   state_ptr states; //call collect_incidence_lists(.) to build transitions
   parsed_transition_ptr parsed_transitions;
   struct AUTOMATON* next;
-  struct AUTOMATON* prev;  
+  struct AUTOMATON* prev;
 } automaton, *automaton_ptr;
 
 typedef struct {

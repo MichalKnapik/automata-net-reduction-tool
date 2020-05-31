@@ -3,6 +3,7 @@
 #include <string.h>
 #include "automata_interface.h"
 #include "ltsNet.tab.h"
+#include "tools.h"
 
 automaton_ptr root = NULL;
 
@@ -174,13 +175,8 @@ synchro_array_ptr read_synchro_array(char* fname) {
   while (fgets(buffer, MAXTOKENLENGTH, fin)) {
 
     if (strlen(buffer) >= 1) buffer[strlen(buffer)-1] = '\0';
-    if (arr->ctr == arr->capacity) {
-      arr->capacity *= arr->capacity;
-      char** new_act_array = (char**) malloc(arr->capacity * sizeof(char*));
-      memcpy(new_act_array, arr->actions, sizeof(char*) * arr->ctr);
-      free(arr->actions);
-      arr->actions = new_act_array;
-    }
+    if (arr->ctr == arr->capacity) 
+      grow_array(&arr->capacity, sizeof(char*), (void**) &arr->actions);
 
     arr->actions[(arr->ctr)++] = strndup(buffer, MAXTOKENLENGTH);
   }
