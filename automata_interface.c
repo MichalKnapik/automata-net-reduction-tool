@@ -75,13 +75,13 @@ void display_automaton(automaton_ptr aut) {
   } else printf(" (not computed)");
   printf("\n");
 
-
   printf("synchronises with:\n");
 
   for (sync_link_ptr linx = aut->sync_links; linx != NULL; linx = linx->next) {
     printf("automaton %p via TODO\n", linx->other);
     //TODO
   }
+
   
 }
 
@@ -181,19 +181,25 @@ void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd) {
   }
   if (!common) return;
   
-  int SYNCINITSIZE = 1; //TODO - change me
+  int SYNCINITSIZE = 100000; //TODO - change me; dla < 10 dziala!!
   sync_link_ptr new_connection = (sync_link_ptr) malloc(sizeof(sync_link));
+  if (!new_connection) {
+    perror("sync_automata_one_way: mem allocation error");
+    exit(1);
+  }
+
   new_connection->other = snd;
   new_connection->sync_action_ctr = 0;
   new_connection->sync_action_capacity = SYNCINITSIZE;  
   new_connection->sync_action_names = (char**) malloc(SYNCINITSIZE * sizeof(char*));
-
+  
   for (parsed_transition_ptr ptr = snd->parsed_transitions; ptr != NULL; ptr = ptr->next) {
 
     if (automaton_knows_transition(fst, ptr->name)) {
-      if (new_connection->sync_action_ctr == new_connection->sync_action_capacity)
+      if (new_connection->sync_action_ctr == new_connection->sync_action_capacity - 1) {
 	grow_ref_array(&new_connection->sync_action_capacity, sizeof(char*), (void**)&new_connection->sync_action_names);
-      new_connection->sync_action_names[(new_connection->sync_action_ctr)++] = ptr->name;
+      }
+      new_connection->sync_action_names[(new_connection->sync_action_ctr)++] = strndup(ptr->name, MAXTOKENLENGTH);
     }
 
   }
@@ -201,12 +207,16 @@ void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd) {
   //TODO now - nie dziala
   if (fst->sync_links == NULL) {
     fst->sync_links = new_connection;
-    printf("CHUJ\n");
   }
   else {
-    printf("CIPA\n");    
     sync_link_ptr sp = fst->sync_links;
-    while (sp->next != NULL) sp = sp->next;
+
+    while (sp->next != NULL) {
+    printf("1\n");      
+      sp = sp->next;
+    printf("2\n");            
+    }
+
     sp->next = new_connection;
   }
   
@@ -223,14 +233,15 @@ automaton_ptr read_automaton(char* fname) {
 
    if((yyin = fopen(fname, "r")) == NULL) {
      perror("an issue with reading models");
-     exit(1);
+     //     exit(1);
    }
 
    yyrestart(yyin);
 
    automaton_ptr retv = NULL;
    if (!yyparse()) retv = root;
-   if (!yyin) fclose(yyin);
+
+   fclose(yyin);
 
    return retv;
 }
@@ -245,7 +256,7 @@ synchro_array_ptr read_synchro_array(char* fname) {
 
   char buffer[MAXTOKENLENGTH];
   
-  int AINITSIZE = 20;
+  int AINITSIZE = 100000;
   synchro_array_ptr arr = (synchro_array_ptr) malloc(sizeof(synchro_array));
   arr->capacity = AINITSIZE;
   arr->ctr = 0;
@@ -254,7 +265,7 @@ synchro_array_ptr read_synchro_array(char* fname) {
   while (fgets(buffer, MAXTOKENLENGTH, fin)) {
 
     if (strlen(buffer) >= 1) buffer[strlen(buffer)-1] = '\0';
-    if (arr->ctr == arr->capacity) 
+    if (arr->ctr == arr->capacity - 1) 
       grow_ref_array(&arr->capacity, sizeof(char*), (void**) &arr->actions);
 
     arr->actions[(arr->ctr)++] = strndup(buffer, MAXTOKENLENGTH);
@@ -275,7 +286,7 @@ void free_synchro_array(synchro_array_ptr sarr) {
 int main(int argc, char **argv) {
 
  unsigned int ctr = 0;
- unsigned int ASIZE = 10;
+ unsigned int ASIZE = 10000;
  unsigned int actr = 0;
  automaton_ptr autos[ASIZE];
 
@@ -291,7 +302,7 @@ int main(int argc, char **argv) {
  printf("*synchro array*\n");
  synchro_array_ptr sarr = read_synchro_array(argv[ctr+1]);
 
- for(int i = 0; i < sarr->ctr; ++i) printf("%s\n", sarr->actions[i]);
+ // for(int i = 0; i < sarr->ctr; ++i) printf("%s\n", sarr->actions[i]);
  
  for (int i = 0; i < actr-1; ++i) free_automaton(autos[i]);
  free_synchro_array(sarr);
