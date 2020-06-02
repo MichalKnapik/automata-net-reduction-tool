@@ -191,7 +191,7 @@ void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd) {
   for (parsed_transition_ptr ptr = snd->parsed_transitions; ptr != NULL; ptr = ptr->next) {
 
     if (automaton_knows_transition(fst, ptr->name)) {
-      if (new_connection->sync_action_ctr == new_connection->sync_action_capacity - 1)
+      if (new_connection->sync_action_ctr == new_connection->sync_action_capacity)
 	grow_ref_array(&new_connection->sync_action_capacity, sizeof(char*), (void**)&new_connection->sync_action_names);
       new_connection->sync_action_names[(new_connection->sync_action_ctr)++] = ptr->name;
     }
