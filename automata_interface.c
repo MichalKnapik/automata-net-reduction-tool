@@ -73,15 +73,14 @@ void display_automaton(automaton_ptr aut) {
       st = st->next;
     }
   } else printf(" (not computed)");
-  printf("\n");
 
-  printf("synchronises with:\n");
-
+  printf("\nsynchronises with: ");
+  if (aut->sync_links == NULL) printf("(none)\n");
   for (sync_link_ptr linx = aut->sync_links; linx != NULL; linx = linx->next) {
-    printf("automaton %p via TODO\n", linx->other);
-    //TODO
+    printf("\nautomaton %p via:\n", linx->other);
+    for (int i = 0; i < linx->sync_action_ctr; ++i)
+      printf("%s ", linx->sync_action_names[i]);
   }
-
   
 }
 
@@ -90,7 +89,7 @@ void display_network(automaton_ptr aut) {
   automaton_ptr aptr = aut;
   int ctr = 0;
   while (aptr != NULL) {
-    printf("(%d)\n", ctr++);
+    printf("\n(%d)\n", ctr++);
     display_automaton(aptr);
     aptr = aptr->next;
   }
@@ -181,7 +180,7 @@ void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd) {
   }
   if (!common) return;
   
-  int SYNCINITSIZE = 100000; //TODO - change me; dla < 10 dziala!!
+  int SYNCINITSIZE = 10;
   sync_link_ptr new_connection = (sync_link_ptr) malloc(sizeof(sync_link));
   if (!new_connection) {
     perror("sync_automata_one_way: mem allocation error");
@@ -192,6 +191,7 @@ void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd) {
   new_connection->sync_action_ctr = 0;
   new_connection->sync_action_capacity = SYNCINITSIZE;  
   new_connection->sync_action_names = (char**) malloc(SYNCINITSIZE * sizeof(char*));
+  new_connection->next = NULL;  
   
   for (parsed_transition_ptr ptr = snd->parsed_transitions; ptr != NULL; ptr = ptr->next) {
 
@@ -204,18 +204,13 @@ void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd) {
 
   }
 
-  //TODO now - nie dziala
   if (fst->sync_links == NULL) {
     fst->sync_links = new_connection;
   }
   else {
     sync_link_ptr sp = fst->sync_links;
-
-    while (sp->next != NULL) {
-    printf("1\n");      
+    while (sp->next != NULL) 
       sp = sp->next;
-    printf("2\n");            
-    }
 
     sp->next = new_connection;
   }
@@ -299,7 +294,7 @@ int main(int argc, char **argv) {
 
  display_network(autos[0]);
  
- printf("*synchro array*\n");
+ printf("\n*synchro array*\n");
  synchro_array_ptr sarr = read_synchro_array(argv[ctr+1]);
 
  // for(int i = 0; i < sarr->ctr; ++i) printf("%s\n", sarr->actions[i]);
