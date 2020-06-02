@@ -2,8 +2,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include "tools.h"
+#include "common.h"
 
-void* grow_array(int* capacity, int size_of_type, void** arr) {
+void* grow_ref_array(int* capacity, int size_of_type, void** arr) {
 
   void* new_act_array = malloc( 2 * (*capacity) * size_of_type);
   if (new_act_array == NULL) {
@@ -17,4 +18,9 @@ void* grow_array(int* capacity, int size_of_type, void** arr) {
   *arr = new_act_array;
 
   return arr;
+}
+
+bool contains_ref_array(void** arr, int size, void* elt) {
+  for (int i = 0; i < size; ++i) if (arr[i] == elt) return true;
+  return false;
 }

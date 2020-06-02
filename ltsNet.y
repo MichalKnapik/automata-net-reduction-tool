@@ -46,7 +46,6 @@ component: STATES statelist TRANSITIONS translist
    ap->next = NULL;
    ap->prev = NULL;
    ap->sync_links = NULL;
-   ap->sync_link_ctr = 0;
    $$ = ap;
    root = ap;
  }

@@ -40,12 +40,14 @@ void free_automaton(automaton_ptr aut) {
     tr = nextt;
   }
 
+  //todo - free sync_action_names
+  
   free(aut);
 }
 
 void display_automaton(automaton_ptr aut) {
 
-  printf("Automaton with states: ");
+  printf("Automaton (%p) with states: ", aut);
   state_ptr st = aut->states;
   while (st != NULL) {
     printf("%s ", st->name);
@@ -72,6 +74,15 @@ void display_automaton(automaton_ptr aut) {
     }
   } else printf(" (not computed)");
   printf("\n");
+
+
+  printf("synchronises with:\n");
+
+  for (sync_link_ptr linx = aut->sync_links; linx != NULL; linx = linx->next) {
+    printf("automaton %p via TODO\n", linx->other);
+    //TODO
+  }
+  
 }
 
 void display_network(automaton_ptr aut) {
@@ -136,8 +147,74 @@ bool collect_incidence_lists(automaton_ptr aut) {
 }
 
 void add_automaton_to_network(automaton_ptr net, automaton_ptr new_automaton) {
+
+  //synchronise the entire network with the new automaton
+  while (net->prev != NULL) net = net->prev;
+
+  while (net->next != NULL) {
+    sync_automata(net, new_automaton);
+    net = net->next;
+  }
+  sync_automata(net, new_automaton);
+
   net->next = new_automaton;
   new_automaton->prev = net;
+}
+
+bool automaton_knows_transition(automaton_ptr aut, char* trans_name) {
+
+  for (parsed_transition_ptr ptr = aut->parsed_transitions; ptr != NULL; ptr = ptr->next) {
+    if (!strcmp(ptr->name, trans_name)) return true;
+  }
+  
+  return false;
+}
+
+void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd) {
+
+  bool common = false;
+  for (parsed_transition_ptr ptr = snd->parsed_transitions; ptr != NULL; ptr = ptr->next) {
+    if (automaton_knows_transition(fst, ptr->name)) {
+      common = true;
+      break;
+    }
+  }
+  if (!common) return;
+  
+  int SYNCINITSIZE = 1; //TODO - change me
+  sync_link_ptr new_connection = (sync_link_ptr) malloc(sizeof(sync_link));
+  new_connection->other = snd;
+  new_connection->sync_action_ctr = 0;
+  new_connection->sync_action_capacity = SYNCINITSIZE;  
+  new_connection->sync_action_names = (char**) malloc(SYNCINITSIZE * sizeof(char*));
+
+  for (parsed_transition_ptr ptr = snd->parsed_transitions; ptr != NULL; ptr = ptr->next) {
+
+    if (automaton_knows_transition(fst, ptr->name)) {
+      if (new_connection->sync_action_ctr == new_connection->sync_action_capacity - 1)
+	grow_ref_array(&new_connection->sync_action_capacity, sizeof(char*), (void**)&new_connection->sync_action_names);
+      new_connection->sync_action_names[(new_connection->sync_action_ctr)++] = ptr->name;
+    }
+
+  }
+
+  //TODO now - nie dziala
+  if (fst->sync_links == NULL) {
+    fst->sync_links = new_connection;
+    printf("CHUJ\n");
+  }
+  else {
+    printf("CIPA\n");    
+    sync_link_ptr sp = fst->sync_links;
+    while (sp->next != NULL) sp = sp->next;
+    sp->next = new_connection;
+  }
+  
+}
+
+void sync_automata(automaton_ptr fst, automaton_ptr snd) {
+  sync_automata_one_way(fst, snd);
+  sync_automata_one_way(snd, fst);
 }
 
 automaton_ptr read_automaton(char* fname) {
@@ -168,7 +245,7 @@ synchro_array_ptr read_synchro_array(char* fname) {
 
   char buffer[MAXTOKENLENGTH];
   
-  int AINITSIZE = 10;
+  int AINITSIZE = 20;
   synchro_array_ptr arr = (synchro_array_ptr) malloc(sizeof(synchro_array));
   arr->capacity = AINITSIZE;
   arr->ctr = 0;
@@ -178,7 +255,7 @@ synchro_array_ptr read_synchro_array(char* fname) {
 
     if (strlen(buffer) >= 1) buffer[strlen(buffer)-1] = '\0';
     if (arr->ctr == arr->capacity) 
-      grow_array(&arr->capacity, sizeof(char*), (void**) &arr->actions);
+      grow_ref_array(&arr->capacity, sizeof(char*), (void**) &arr->actions);
 
     arr->actions[(arr->ctr)++] = strndup(buffer, MAXTOKENLENGTH);
   }
@@ -201,12 +278,9 @@ int main(int argc, char **argv) {
  unsigned int ASIZE = 10;
  unsigned int actr = 0;
  automaton_ptr autos[ASIZE];
- 
+
  while (true) {
-
    if (ctr == argc - 2) break;
-   printf("Automaton (%d)\n", ctr);
-
    autos[actr++] = read_automaton(argv[++ctr]);
    collect_incidence_lists(autos[actr-1]);
    if (ctr > 1) add_automaton_to_network(autos[0], autos[actr-1]);
@@ -221,5 +295,5 @@ int main(int argc, char **argv) {
  
  for (int i = 0; i < actr-1; ++i) free_automaton(autos[i]);
  free_synchro_array(sarr);
-
+ 
 }
