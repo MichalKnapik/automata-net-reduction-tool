@@ -40,8 +40,19 @@ void free_automaton(automaton_ptr aut) {
     tr = nextt;
   }
 
-  //todo - free sync_action_names
-  
+  sync_link_ptr hlp = NULL;
+  sync_link_ptr sl = aut->sync_links;
+  while (sl != NULL) {
+    hlp = sl;
+    for (int i = 0; i < sl->sync_action_ctr; ++i) {
+      free(sl->sync_action_names[i]);
+    }
+    free(sl->sync_action_names);
+    sl = sl->next;
+    if (hlp != NULL) free(hlp); //???
+    
+  }
+
   free(aut);
 }
 
