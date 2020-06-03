@@ -86,7 +86,7 @@ void display_automaton(automaton_ptr aut) {
   } else printf(" (not computed)");
 
   printf("\nsynchronises with: ");
-  if (aut->sync_links == NULL) printf("(none)\n");
+  if (aut->sync_links == NULL) printf("(none)");
   for (sync_link_ptr linx = aut->sync_links; linx != NULL; linx = linx->next) {
     printf("\nautomaton %p via:\n", linx->other);
     for (int i = 0; i < linx->sync_action_ctr; ++i)
@@ -158,7 +158,6 @@ bool collect_incidence_lists(automaton_ptr aut) {
 
 void add_automaton_to_network(automaton_ptr net, automaton_ptr new_automaton) {
 
-  //synchronise the entire network with the new automaton
   while (net->prev != NULL) net = net->prev;
 
   while (net->next != NULL) {
@@ -250,67 +249,4 @@ automaton_ptr read_automaton(char* fname) {
    fclose(yyin);
 
    return retv;
-}
-
-synchro_array_ptr read_synchro_array(char* fname) {
-
-  FILE* fin;
-  if ((fin = fopen(fname, "r")) == NULL) {
-     perror("an issue with reading synchronising actions");
-     exit(1);
-  }
-
-  char buffer[MAXTOKENLENGTH];
-  
-  int AINITSIZE = 100000;
-  synchro_array_ptr arr = (synchro_array_ptr) malloc(sizeof(synchro_array));
-  arr->capacity = AINITSIZE;
-  arr->ctr = 0;
-  arr->actions = (char**) malloc(arr->capacity * sizeof(char*));
-
-  while (fgets(buffer, MAXTOKENLENGTH, fin)) {
-
-    if (strlen(buffer) >= 1) buffer[strlen(buffer)-1] = '\0';
-    if (arr->ctr == arr->capacity - 1) 
-      grow_ref_array(&arr->capacity, sizeof(char*), (void**) &arr->actions);
-
-    arr->actions[(arr->ctr)++] = strndup(buffer, MAXTOKENLENGTH);
-  }
-
-  if (!fin) fclose(fin);
-  return arr;
-}
-
-void free_synchro_array(synchro_array_ptr sarr) {
-
-  while(--(sarr->ctr) >= 0) free(sarr->actions[sarr->ctr]);
-  free(sarr->actions);
-  free(sarr);
-
-}
-
-int main(int argc, char **argv) {
-
- unsigned int ctr = 0;
- unsigned int ASIZE = 10000;
- unsigned int actr = 0;
- automaton_ptr autos[ASIZE];
-
- while (true) {
-   if (ctr == argc - 2) break;
-   autos[actr++] = read_automaton(argv[++ctr]);
-   collect_incidence_lists(autos[actr-1]);
-   if (ctr > 1) add_automaton_to_network(autos[0], autos[actr-1]);
- }
-
- display_network(autos[0]);
- 
- printf("\n*synchro array*\n");
- synchro_array_ptr sarr = read_synchro_array(argv[ctr+1]);
-
- // for(int i = 0; i < sarr->ctr; ++i) printf("%s\n", sarr->actions[i]);
- 
- for (int i = 0; i < actr-1; ++i) free_automaton(autos[i]);
- free_synchro_array(sarr);
- 
 }

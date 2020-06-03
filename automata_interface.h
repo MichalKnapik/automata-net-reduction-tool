@@ -1,14 +1,19 @@
 #ifndef AUTOMATA_INTERFACE_H
 #define AUTOMATA_INTERFACE_H
 
+#include "common.h"
+
+struct TRANSITION;
+struct sync_link;
+
+typedef char auto_flags;
+#define AUTOM_NONE 0x0
+#define AUTOM_INCIDENCE_OK 0x1
+
 //careful with this; added to suppress warnings
 void yyerror(char* s);
 int yylex(void);
 void yyrestart(FILE *input_file);
-
-#include "common.h"
-
-struct TRANSITION;
 
 /* Auxiliary: a helper in parsing. */
 typedef struct TR {
@@ -35,19 +40,6 @@ typedef struct TRANSITION {
   struct TRANSITION* prev;  
 } transition, *transition_ptr;
 
-/* An array of actions over which automata synchronise. */
-typedef struct {
-  char** actions;
-  int ctr;
-  int capacity;
-} synchro_array, *synchro_array_ptr;
-
-struct sync_link;
-
-typedef char auto_flags;
-#define AUTOM_NONE 0x0
-#define AUTOM_INCIDENCE_OK 0x1
-
 /* A bidirectional list of all the automata in a network. */
 typedef struct AUTOMATON {
 
@@ -59,7 +51,6 @@ typedef struct AUTOMATON {
   struct AUTOMATON* prev; 
 
   //an array of synchronisation links with other automata
-  //(TODO)
   struct sync_link* sync_links;
 
   parsed_transition_ptr parsed_transitions;  
@@ -68,7 +59,6 @@ typedef struct AUTOMATON {
 
 /* A list of synchronisation links. Array sync_action_names 
    connects the struct's owner with other via sync_action_names. */
-//(TODO)
 typedef struct sync_link {
   automaton_ptr other; 
   char** sync_action_names;
@@ -96,18 +86,13 @@ void free_automaton(automaton_ptr aut);
 void display_automaton(automaton_ptr aut);
 void display_network(automaton_ptr aut);
 state_ptr get_state_by_name(automaton_ptr aut, char* state_name);
+/* Fills the incidence list of each state of aut. */
 bool collect_incidence_lists(automaton_ptr aut);
-
-bool automaton_knows_transition(automaton_ptr aut, char* trans_name);
-
 /* Connects an automaton to the network of automata. */ 
 void add_automaton_to_network(automaton_ptr net, automaton_ptr new_automaton);
+bool automaton_knows_transition(automaton_ptr aut, char* trans_name);
 void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd);
 void sync_automata(automaton_ptr fst, automaton_ptr snd);
-
 automaton_ptr read_automaton(char* fname);
-
-synchro_array_ptr read_synchro_array(char* fname);
-void free_synchro_array(synchro_array_ptr sarr); 
 
 #endif

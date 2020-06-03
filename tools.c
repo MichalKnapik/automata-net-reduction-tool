@@ -4,6 +4,43 @@
 #include "tools.h"
 #include "common.h"
 
+synchro_array_ptr read_synchro_array(char* fname) {
+
+  FILE* fin;
+  if ((fin = fopen(fname, "r")) == NULL) {
+     perror("an issue with reading synchronising actions");
+     exit(1);
+  }
+
+  char buffer[MAXTOKENLENGTH];
+  
+  int AINITSIZE = 1000;
+  synchro_array_ptr arr = (synchro_array_ptr) malloc(sizeof(synchro_array));
+  arr->capacity = AINITSIZE;
+  arr->ctr = 0;
+  arr->actions = (char**) malloc(arr->capacity * sizeof(char*));
+
+  while (fgets(buffer, MAXTOKENLENGTH, fin)) {
+
+    if (strlen(buffer) >= 1) buffer[strlen(buffer)-1] = '\0';
+    if (arr->ctr == arr->capacity - 1) 
+      grow_ref_array(&arr->capacity, sizeof(char*), (void**) &arr->actions);
+
+    arr->actions[(arr->ctr)++] = strndup(buffer, MAXTOKENLENGTH);
+  }
+
+  if (!fin) fclose(fin);
+  return arr;
+}
+
+void free_synchro_array(synchro_array_ptr sarr) {
+
+  while(--(sarr->ctr) >= 0) free(sarr->actions[sarr->ctr]);
+  free(sarr->actions);
+  free(sarr);
+
+}
+
 void* grow_ref_array(int* capacity, int size_of_type, void** arr) {
 
   void* new_act_array = malloc( 2 * (*capacity) * size_of_type);
