@@ -49,8 +49,7 @@ void free_automaton(automaton_ptr aut) {
     }
     free(sl->sync_action_names);
     sl = sl->next;
-    if (hlp != NULL) free(hlp); //???
-    
+    if (hlp != NULL) free(hlp);
   }
 
   free(aut);
@@ -238,7 +237,7 @@ automaton_ptr read_automaton(char* fname) {
 
    if((yyin = fopen(fname, "r")) == NULL) {
      perror("an issue with reading models");
-     //     exit(1);
+     exit(1);
    }
 
    yyrestart(yyin);
@@ -249,4 +248,31 @@ automaton_ptr read_automaton(char* fname) {
    fclose(yyin);
 
    return retv;
+}
+
+bool automaton_to_dot(automaton_ptr aut, char* dotfname) {
+
+  FILE* dotf = NULL;
+  if ((dotf = fopen(dotfname, "w")) == NULL) {
+    perror("can't write dot file");
+    return false;
+  }
+
+  fprintf(dotf, "graph g%p {\n", aut);
+  fprintf(dotf, "%s [style = filled, color = green];\n", aut->states->name);
+  for (state_ptr state = aut->states; state != NULL; state = state->next) {
+
+    for (transition_ptr trans = state->outgoing; trans != NULL; trans = trans->next) {
+      fprintf(dotf, "%s -- %s [label = \"%s\"];\n", trans->source->name, trans->target->name, trans->name);
+    }
+
+  }
+
+  fprintf(dotf, "label = \"automaton: %p\\n\\n\";\n", aut);
+  fprintf(dotf, "labelloc = t;\n");  
+  fprintf(dotf, "}");
+
+  if (dotf != NULL) fclose(dotf);
+  
+  return true;
 }

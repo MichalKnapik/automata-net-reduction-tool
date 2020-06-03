@@ -95,4 +95,6 @@ void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd);
 void sync_automata(automaton_ptr fst, automaton_ptr snd);
 automaton_ptr read_automaton(char* fname);
 
+bool automaton_to_dot(automaton_ptr aut, char* dotfname);
+
 #endif
