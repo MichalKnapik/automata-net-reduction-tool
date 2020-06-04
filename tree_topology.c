@@ -19,11 +19,13 @@ int main(int argc, char **argv) {
    if (ctr > 1) add_automaton_to_network(autos[0], autos[actr-1]);
  }
 
- display_network(autos[0]);
 
  printf("\ndott\n");
  automaton_to_dot(autos[0], "zero.dot");
- 
+
+ copy_work_links(autos[0]);
+
+ display_network(autos[0]);
 
  printf("\nDone.\n");
  

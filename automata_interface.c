@@ -40,18 +40,10 @@ void free_automaton(automaton_ptr aut) {
     tr = nextt;
   }
 
-  sync_link_ptr hlp = NULL;
-  sync_link_ptr sl = aut->sync_links;
-  while (sl != NULL) {
-    hlp = sl;
-    for (int i = 0; i < sl->sync_action_ctr; ++i) {
-      free(sl->sync_action_names[i]);
-    }
-    free(sl->sync_action_names);
-    sl = sl->next;
-    if (hlp != NULL) free(hlp);
-  }
-
+  clear_sync_links(aut);
+  
+  clear_work_links(aut);
+  
   free(aut);
 }
 
@@ -71,28 +63,20 @@ void display_automaton(automaton_ptr aut) {
     tr = tr->next;
   }
 
-  transition_ptr tp = NULL;
   printf("the incidence list:");
   if (aut->flags & AUTOM_INCIDENCE_OK) {
-    st = aut->states;
-    while (st != NULL) {
-      printf("\n(%s): ", st->name);
-      for (tp = st->outgoing; tp != NULL; tp = tp->next) {
-	printf(" %s (%s).", tp->name, tp->target->name);
-      }
-      st = st->next;
-    }
+    print_incidence_list(aut);
   } else printf(" (not computed)");
 
   printf("\nsynchronises with: ");
-  if (aut->sync_links == NULL) printf("(none)");
-  for (sync_link_ptr linx = aut->sync_links; linx != NULL; linx = linx->next) {
-    printf("\nautomaton %p via:\n", linx->other);
-    for (int i = 0; i < linx->sync_action_ctr; ++i)
-      printf("%s ", linx->sync_action_names[i]);
-  }
-  
-}
+  print_synchro_links(aut, MAIN_SYNCHRO_LINKS);
+
+  printf("\nthe working synchronisation list:");
+  if (aut->work_links != NULL) {  
+    print_synchro_links(aut, WORKER_SYNCHRO_LINKS);
+  } else printf(" (not computed)");
+
+} 
 
 void display_network(automaton_ptr aut) {
 
@@ -102,6 +86,42 @@ void display_network(automaton_ptr aut) {
     printf("\n(%d)\n", ctr++);
     display_automaton(aptr);
     aptr = aptr->next;
+  }
+
+}
+
+void print_synchro_links(automaton_ptr aut, SL_CHOICE ptype) {
+
+  if (aut->sync_links == NULL) printf("(none)");
+
+  sync_link_ptr linx = NULL;
+  if (ptype == MAIN_SYNCHRO_LINKS) {
+    linx = aut->sync_links;
+  } else if (ptype == WORKER_SYNCHRO_LINKS) {
+    linx = aut->work_links;
+  }
+
+  while (linx != NULL) {
+    printf("\nautomaton %p via:\n", linx->other);
+    for (int i = 0; i < linx->sync_action_ctr; ++i)
+      printf("%s ", linx->sync_action_names[i]);
+
+    linx = linx->next;
+  }
+
+}
+
+void print_incidence_list(automaton_ptr aut) {
+
+  transition_ptr tp = NULL;  
+  state_ptr st = aut->states;
+
+  while (st != NULL) {
+    printf("\n(%s): ", st->name);
+    for (tp = st->outgoing; tp != NULL; tp = tp->next) {
+      printf(" %s (%s).", tp->name, tp->target->name);
+    }
+    st = st->next;
   }
 
 }
@@ -230,6 +250,64 @@ void sync_automata(automaton_ptr fst, automaton_ptr snd) {
   sync_automata_one_way(fst, snd);
   sync_automata_one_way(snd, fst);
 }
+
+void clear_sync_links(automaton_ptr aut) {
+
+  sync_link_ptr hlp = NULL;
+  sync_link_ptr sl = aut->sync_links;
+
+  while (sl != NULL) {
+    hlp = sl;
+    for (int i = 0; i < sl->sync_action_ctr; ++i) {
+      free(sl->sync_action_names[i]);
+    }
+    free(sl->sync_action_names);
+    sl = sl->next;
+    if (hlp != NULL) free(hlp);
+  }
+
+}
+
+void clear_work_links(automaton_ptr aut) {
+
+  sync_link_ptr hlp = NULL;
+  sync_link_ptr sl = aut->work_links;
+
+  while (sl != NULL) {
+    hlp = sl;
+    free(sl->sync_action_names);
+    sl = sl->next;
+    if (hlp != NULL) free(hlp);
+  }
+
+}
+
+void copy_work_links(automaton_ptr aut) {
+
+  sync_link_ptr lptr = NULL;
+  sync_link_ptr bgnptr = NULL;
+  
+  for (sync_link_ptr link = aut->sync_links; link != NULL; link = link->next) {
+    if (bgnptr == NULL) {
+      lptr = (sync_link_ptr) malloc(sizeof(sync_link));
+      bgnptr = lptr;
+    } else {
+      lptr->next = (sync_link_ptr) malloc(sizeof(sync_link));
+      lptr = lptr->next;
+    }
+
+    lptr->other = link->other;
+    lptr->sync_action_ctr = link->sync_action_ctr;
+    lptr->sync_action_capacity = link->sync_action_capacity;
+    lptr->sync_action_names = (char**) malloc(link->sync_action_capacity * sizeof(char*));
+    lptr->next = NULL;
+    
+    memcpy(lptr->sync_action_names, link->sync_action_names, link->sync_action_ctr * sizeof(char*));
+  }
+
+  aut->work_links = bgnptr;
+}
+
 
 automaton_ptr read_automaton(char* fname) {
 
