@@ -2,6 +2,7 @@
 #define AUTOMATA_INTERFACE_H
 
 #include "common.h"
+#include "tools.h"
 
 struct TRANSITION;
 struct sync_link;
@@ -54,7 +55,7 @@ typedef struct AUTOMATON {
   struct sync_link* sync_links;
 
   /* a copy of the above, to be used in exploration algorithms
-     clear it using clear_work_links(.) and copy sync_links
+     clear it using free_work_links(.) and copy sync_links
      to work_links using copy_work_links(.). The depth of copying
      is as follows:
      - other: reference is copied and needs no cleanup;
@@ -108,18 +109,24 @@ state_ptr get_state_by_name(automaton_ptr aut, char* state_name);
 /* Fills the incidence list of each state of aut. */
 bool collect_incidence_lists(automaton_ptr aut);
 
-/* Connects an automaton to the network of automata. */ 
-void add_automaton_to_network(automaton_ptr net, automaton_ptr new_automaton);
+/* Connects an automaton to the network of automata.
+   The synchro_array_ptr sarr is an array of actions (see tools.h)
+   s.t. two automata can synchronise over a in sarr if they both know
+   a. If sarr is NULL then automata synchronise over any action with
+   common labels. */
+void add_automaton_to_network(automaton_ptr net, automaton_ptr new_automaton, synchro_array_ptr sarr);
 
-bool automaton_knows_transition(automaton_ptr aut, char* trans_name);
+/* Returns true iff aut has registered trans_name as an action label and (trans_name is in sarr
+   or sarr is NULL. */
+bool automaton_knows_transition(automaton_ptr aut, char* trans_name, synchro_array_ptr sarr);
 
-void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd);
+void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd, synchro_array_ptr sarr);
 
-void sync_automata(automaton_ptr fst, automaton_ptr snd);
+void sync_automata(automaton_ptr fst, automaton_ptr snd, synchro_array_ptr sarr);
 
-void clear_sync_links(automaton_ptr aut);
+void free_sync_links(automaton_ptr aut);
 
-void clear_work_links(automaton_ptr aut);
+void free_work_links(automaton_ptr aut);
 
 void copy_work_links(automaton_ptr aut);
 

@@ -24,7 +24,7 @@ void free_automaton(automaton_ptr aut) {
      free(tp);
      tp = tnxt;
     }
-    
+
     free(st);
     st = nexts;
   }
@@ -40,10 +40,10 @@ void free_automaton(automaton_ptr aut) {
     tr = nextt;
   }
 
-  clear_sync_links(aut);
-  
-  clear_work_links(aut);
-  
+  free_sync_links(aut);
+
+  free_work_links(aut);
+
   free(aut);
 }
 
@@ -72,11 +72,11 @@ void display_automaton(automaton_ptr aut) {
   print_synchro_links(aut, MAIN_SYNCHRO_LINKS);
 
   printf("\nthe working synchronisation list:");
-  if (aut->work_links != NULL) {  
+  if (aut->work_links != NULL) {
     print_synchro_links(aut, WORKER_SYNCHRO_LINKS);
   } else printf(" (not computed)");
 
-} 
+}
 
 void display_network(automaton_ptr aut) {
 
@@ -113,7 +113,7 @@ void print_synchro_links(automaton_ptr aut, SL_CHOICE ptype) {
 
 void print_incidence_list(automaton_ptr aut) {
 
-  transition_ptr tp = NULL;  
+  transition_ptr tp = NULL;
   state_ptr st = aut->states;
 
   while (st != NULL) {
@@ -160,7 +160,7 @@ bool collect_incidence_lists(automaton_ptr aut) {
     tr->source = src;
     tr->target = trg;
     tr->name = strndup(pptr->name, MAXTOKENLENGTH);
-    tr->next = NULL;        
+    tr->next = NULL;
     tr->prev = NULL;
 
     if (!src->outgoing) src->outgoing = tr;
@@ -169,46 +169,47 @@ bool collect_incidence_lists(automaton_ptr aut) {
       tr->next = src->outgoing;
       src->outgoing = tr;
     }
-    
+
   }
 
   return true;
 }
 
-void add_automaton_to_network(automaton_ptr net, automaton_ptr new_automaton) {
+void add_automaton_to_network(automaton_ptr net, automaton_ptr new_automaton, synchro_array_ptr sarr) {
 
   while (net->prev != NULL) net = net->prev;
 
   while (net->next != NULL) {
-    sync_automata(net, new_automaton);
+    sync_automata(net, new_automaton, sarr);
     net = net->next;
   }
-  sync_automata(net, new_automaton);
+  sync_automata(net, new_automaton, sarr);
 
   net->next = new_automaton;
   new_automaton->prev = net;
 }
 
-bool automaton_knows_transition(automaton_ptr aut, char* trans_name) {
+bool automaton_knows_transition(automaton_ptr aut, char* trans_name, synchro_array_ptr sarr) {
 
   for (parsed_transition_ptr ptr = aut->parsed_transitions; ptr != NULL; ptr = ptr->next) {
-    if (!strcmp(ptr->name, trans_name)) return true;
+    if (!strcmp(ptr->name, trans_name) &&
+        (sarr == NULL || contains_ref_array((void**) sarr, sarr->ctr, (void*) trans_name))) return true;
   }
-  
+
   return false;
 }
 
-void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd) {
+void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd, synchro_array_ptr sarr) {
 
   bool common = false;
   for (parsed_transition_ptr ptr = snd->parsed_transitions; ptr != NULL; ptr = ptr->next) {
-    if (automaton_knows_transition(fst, ptr->name)) {
+    if (automaton_knows_transition(fst, ptr->name, sarr)) {
       common = true;
       break;
     }
   }
   if (!common) return;
-  
+
   int SYNCINITSIZE = 10;
   sync_link_ptr new_connection = (sync_link_ptr) malloc(sizeof(sync_link));
   if (!new_connection) {
@@ -218,13 +219,13 @@ void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd) {
 
   new_connection->other = snd;
   new_connection->sync_action_ctr = 0;
-  new_connection->sync_action_capacity = SYNCINITSIZE;  
+  new_connection->sync_action_capacity = SYNCINITSIZE;
   new_connection->sync_action_names = (char**) malloc(SYNCINITSIZE * sizeof(char*));
-  new_connection->next = NULL;  
-  
+  new_connection->next = NULL;
+
   for (parsed_transition_ptr ptr = snd->parsed_transitions; ptr != NULL; ptr = ptr->next) {
 
-    if (automaton_knows_transition(fst, ptr->name)) {
+    if (automaton_knows_transition(fst, ptr->name, sarr)) {
       if (new_connection->sync_action_ctr == new_connection->sync_action_capacity - 1) {
 	grow_ref_array(&new_connection->sync_action_capacity, sizeof(char*), (void**)&new_connection->sync_action_names);
       }
@@ -238,20 +239,20 @@ void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd) {
   }
   else {
     sync_link_ptr sp = fst->sync_links;
-    while (sp->next != NULL) 
+    while (sp->next != NULL)
       sp = sp->next;
 
     sp->next = new_connection;
   }
-  
+
 }
 
-void sync_automata(automaton_ptr fst, automaton_ptr snd) {
-  sync_automata_one_way(fst, snd);
-  sync_automata_one_way(snd, fst);
+void sync_automata(automaton_ptr fst, automaton_ptr snd, synchro_array_ptr sarr) {
+  sync_automata_one_way(fst, snd, sarr);
+  sync_automata_one_way(snd, fst, sarr);
 }
 
-void clear_sync_links(automaton_ptr aut) {
+void free_sync_links(automaton_ptr aut) {
 
   sync_link_ptr hlp = NULL;
   sync_link_ptr sl = aut->sync_links;
@@ -268,7 +269,7 @@ void clear_sync_links(automaton_ptr aut) {
 
 }
 
-void clear_work_links(automaton_ptr aut) {
+void free_work_links(automaton_ptr aut) {
 
   sync_link_ptr hlp = NULL;
   sync_link_ptr sl = aut->work_links;
@@ -286,7 +287,7 @@ void copy_work_links(automaton_ptr aut) {
 
   sync_link_ptr lptr = NULL;
   sync_link_ptr bgnptr = NULL;
-  
+
   for (sync_link_ptr link = aut->sync_links; link != NULL; link = link->next) {
     if (bgnptr == NULL) {
       lptr = (sync_link_ptr) malloc(sizeof(sync_link));
@@ -301,7 +302,7 @@ void copy_work_links(automaton_ptr aut) {
     lptr->sync_action_capacity = link->sync_action_capacity;
     lptr->sync_action_names = (char**) malloc(link->sync_action_capacity * sizeof(char*));
     lptr->next = NULL;
-    
+
     memcpy(lptr->sync_action_names, link->sync_action_names, link->sync_action_ctr * sizeof(char*));
   }
 
@@ -347,10 +348,10 @@ bool automaton_to_dot(automaton_ptr aut, char* dotfname) {
   }
 
   fprintf(dotf, "label = \"automaton: %p\\n\\n\";\n", aut);
-  fprintf(dotf, "labelloc = t;\n");  
+  fprintf(dotf, "labelloc = t;\n");
   fprintf(dotf, "}");
 
   if (dotf != NULL) fclose(dotf);
-  
+
   return true;
 }

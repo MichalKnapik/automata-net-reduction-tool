@@ -13,7 +13,7 @@ synchro_array_ptr read_synchro_array(char* fname) {
   }
 
   char buffer[MAXTOKENLENGTH];
-  
+
   int AINITSIZE = 1000;
   synchro_array_ptr arr = (synchro_array_ptr) malloc(sizeof(synchro_array));
   arr->capacity = AINITSIZE;
@@ -48,7 +48,7 @@ void* grow_ref_array(int* capacity, int size_of_type, void** arr) {
     perror("array growth error");
     exit(1);
   }
-  
+
   memcpy(new_act_array, *arr, size_of_type * (*capacity));
   *capacity = 2 * (*capacity);
   free(*arr);
