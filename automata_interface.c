@@ -193,7 +193,7 @@ bool automaton_knows_transition(automaton_ptr aut, char* trans_name, synchro_arr
 
   for (parsed_transition_ptr ptr = aut->parsed_transitions; ptr != NULL; ptr = ptr->next) {
     if (!strcmp(ptr->name, trans_name) &&
-        (sarr == NULL || contains_ref_array((void**) sarr, sarr->ctr, (void*) trans_name))) return true;
+        (sarr == NULL || cstring_array_contains(sarr->actions, sarr->ctr, trans_name))) return true;
   }
 
   return false;
@@ -203,6 +203,7 @@ void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd, synchro_array_p
 
   bool common = false;
   for (parsed_transition_ptr ptr = snd->parsed_transitions; ptr != NULL; ptr = ptr->next) {
+
     if (automaton_knows_transition(fst, ptr->name, sarr)) {
       common = true;
       break;

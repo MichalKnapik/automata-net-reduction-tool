@@ -57,7 +57,10 @@ void* grow_ref_array(int* capacity, int size_of_type, void** arr) {
   return arr;
 }
 
-bool contains_ref_array(void** arr, int size, void* elt) {
-  for (int i = 0; i < size; ++i) if (arr[i] == elt) return true;
+bool cstring_array_contains(char** arr, int size, char* elt) {
+
+  for (int i = 0; i < size; ++i) 
+    if (!strcmp(arr[i], elt)) return true;
+
   return false;
 }
