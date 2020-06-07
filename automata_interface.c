@@ -7,6 +7,29 @@
 
 automaton_ptr root = NULL;
 
+void mark_automaton(automaton_ptr aut) {
+  aut->flags |= AUTOM_MARKED;
+}
+
+void clear_automaton(automaton_ptr aut) {
+  aut->flags &= ~AUTOM_MARKED;
+}
+
+bool is_automaton_marked(automaton_ptr aut) {
+  return (aut->flags & AUTOM_MARKED) != 0 ;
+}
+
+void clear_network(automaton_ptr net) {
+
+  while (net->prev != NULL) net = net->prev;
+
+  while (net->next != NULL) {
+    clear_automaton(net);
+    net = net->next;
+  }
+
+}
+
 void free_automaton(automaton_ptr aut) {
 
   state_ptr st = aut->states;
@@ -41,15 +64,16 @@ void free_automaton(automaton_ptr aut) {
   }
 
   free_sync_links(aut);
-
   free_work_links(aut);
-
   free(aut);
 }
 
 void display_automaton(automaton_ptr aut) {
 
-  printf("Automaton (%p) with states: ", aut);
+  if (aut->flags & AUTOM_MARKED) printf("Marked ");
+    else printf("Unmarked ");
+
+  printf("automaton (%p) with states: ", aut);
   state_ptr st = aut->states;
   while (st != NULL) {
     printf("%s ", st->name);
@@ -91,8 +115,12 @@ void display_network(automaton_ptr aut) {
 }
 
 void print_synchro_links(automaton_ptr aut, SL_CHOICE ptype) {
-
-  if (aut->sync_links == NULL) printf("(none)");
+  /* TODO? */
+  /* if ((ptype == MAIN_SYNCHRO_LINKS && aut->sync_links == NULL) */
+  /*     || (ptype == WORKER_SYNCHRO_LINKS && aut->work_links == NULL)) { */
+  /*   printf("(none)"); */
+  /*   return; */
+  /* } */
 
   sync_link_ptr linx = NULL;
   if (ptype == MAIN_SYNCHRO_LINKS) {
@@ -103,8 +131,9 @@ void print_synchro_links(automaton_ptr aut, SL_CHOICE ptype) {
 
   while (linx != NULL) {
     printf("\nautomaton %p via:\n", linx->other);
-    for (int i = 0; i < linx->sync_action_ctr; ++i)
+    for (int i = 0; i < linx->sync_action_ctr; ++i) {
       printf("%s ", linx->sync_action_names[i]);
+    }
 
     linx = linx->next;
   }
@@ -223,6 +252,7 @@ void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd, synchro_array_p
   new_connection->sync_action_capacity = SYNCINITSIZE;
   new_connection->sync_action_names = (char**) malloc(SYNCINITSIZE * sizeof(char*));
   new_connection->next = NULL;
+  new_connection->prev = NULL;  
 
   for (parsed_transition_ptr ptr = snd->parsed_transitions; ptr != NULL; ptr = ptr->next) {
 
@@ -244,6 +274,7 @@ void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd, synchro_array_p
       sp = sp->next;
 
     sp->next = new_connection;
+    new_connection->prev = sp;
   }
 
 }
@@ -263,7 +294,7 @@ void free_sync_links(automaton_ptr aut) {
     for (int i = 0; i < sl->sync_action_ctr; ++i) {
       free(sl->sync_action_names[i]);
     }
-    free(sl->sync_action_names);
+    if (sl->sync_action_names != NULL) free(sl->sync_action_names);
     sl = sl->next;
     if (hlp != NULL) free(hlp);
   }
@@ -277,7 +308,7 @@ void free_work_links(automaton_ptr aut) {
 
   while (sl != NULL) {
     hlp = sl;
-    free(sl->sync_action_names);
+    if (sl->sync_action_names != NULL) free(sl->sync_action_names);
     sl = sl->next;
     if (hlp != NULL) free(hlp);
   }
@@ -290,11 +321,14 @@ void copy_work_links(automaton_ptr aut) {
   sync_link_ptr bgnptr = NULL;
 
   for (sync_link_ptr link = aut->sync_links; link != NULL; link = link->next) {
+
     if (bgnptr == NULL) {
       lptr = (sync_link_ptr) malloc(sizeof(sync_link));
+      lptr->prev = NULL;
       bgnptr = lptr;
     } else {
       lptr->next = (sync_link_ptr) malloc(sizeof(sync_link));
+      lptr->next->prev = lptr;
       lptr = lptr->next;
     }
 
@@ -310,6 +344,15 @@ void copy_work_links(automaton_ptr aut) {
   aut->work_links = bgnptr;
 }
 
+void copy_work_links_network(automaton_ptr net) {
+
+  while (net->prev != NULL) net = net->prev;
+
+  while (net->next != NULL) {
+    copy_work_links(net);
+    net = net->next;
+  }
+}
 
 automaton_ptr read_automaton(char* fname) {
 

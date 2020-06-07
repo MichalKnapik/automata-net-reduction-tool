@@ -1,27 +1,14 @@
 #ifndef TREE_TOPOLOGY_H
 #define TREE_TOPOLOGY_H
 
-/* Computes a spanning tree rooted at aut. Warning: it prunes the
-   original topology, so to preserve it implement a deep-copy of
-   the automata net. */
-/* void get_subtree(automaton aut) { */
+#include "common.h"
+#include "tools.h"
+#include "automata_interface.h"
 
-/*   worklist wl = [];  */
-/*   worklist workleaves = [aut];  */
-
-/*   while (leaves not empty): */
-/*     leaf = pop(workleaves) */
-
-/*     for all q in leaf.sync_link: */
-/*         if q.other is in wl or q.other is in leaves: */
-/*            remove q from leaf.sync_link */
-/*         else: */
-/*            add q.other to workleaves */
-/*         add q to worklist */
-
-/* } */
-
-
+/* Computes a spanning (DFS) tree w.r.t. synchronisation topology rooted
+   at aut. The links of the tree are held in work_links of the automata
+   (sync_links are not modified). Warning: recursive; consider rewriting. */
+void make_subtree(automaton_ptr aut);
 
 #endif
 

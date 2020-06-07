@@ -5,13 +5,42 @@
 #include "tools.h"
 #include "tree_topology.h"
 
+void make_subtree(automaton_ptr aut) {
+
+  mark_automaton(aut);
+  copy_work_links(aut);
+
+  sync_link_ptr slp = aut->work_links;
+  sync_link_ptr hlp = NULL;
+  while (slp != NULL) {
+
+    if (is_automaton_marked(slp->other)) { //the target is marked, remove and free the link
+
+      if (slp->prev != NULL) (slp->prev)->next = slp->next;
+      else aut->work_links = slp->next;
+
+      if (slp->next != NULL) (slp->next)->prev = slp->prev;
+
+      free(slp->sync_action_names);
+      slp->sync_action_names = NULL;
+      hlp = slp->next;
+      free(slp);
+      slp = hlp;
+
+    } else { //not marked; recursive call and move further in the work_links
+      make_subtree(slp->other);
+      slp = slp->next;
+    }
+  }
+
+}
+
 int main(int argc, char **argv) {
 
  unsigned int ctr = 0;
  unsigned int ASIZE = 10000;
  unsigned int actr = 0;
  automaton_ptr autos[ASIZE];
-
 
  /* read synchro array */
  synchro_array_ptr sarr = read_synchro_array(argv[argc-1]);
@@ -28,18 +57,18 @@ int main(int argc, char **argv) {
  }
 
  //copy work links - zrob to dla calej sieci
- for (int i = 0; i < actr; ++i) {
-   copy_work_links(autos[i]);
- }
 
  display_network(autos[0]);
 
- printf("\nsaving the first automaton to dot\n");
+ printf("\nsaving the first automaton to zero.dot\n");
  automaton_to_dot(autos[0], "zero.dot");
 
- printf("\nDone.\n");
-
+ make_subtree(autos[0]);
+ display_network(autos[0]); //ERR
+ 
+ //cleanup 
  for (int i = 0; i < actr-1; ++i) free_automaton(autos[i]);
  free_synchro_array(sarr);
 
+ printf("\nDone.\n"); 
 }

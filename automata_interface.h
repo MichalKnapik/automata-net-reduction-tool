@@ -10,6 +10,7 @@ struct sync_link;
 typedef char auto_flags;
 #define AUTOM_NONE 0x0
 #define AUTOM_INCIDENCE_OK 0x1
+#define AUTOM_MARKED 0x2
 
 //careful with this; added to suppress warnings
 void yyerror(char* s);
@@ -68,14 +69,15 @@ typedef struct AUTOMATON {
 
 } automaton, *automaton_ptr;
 
-/* A list of synchronisation links. Array sync_action_names 
+/* A bidirectional list of synchronisation links. Array sync_action_names
    connects the struct's owner with other via sync_action_names. */
 typedef struct sync_link {
-  automaton_ptr other; 
+  automaton_ptr other;
   char** sync_action_names;
   int sync_action_ctr;
-  int sync_action_capacity;  
+  int sync_action_capacity;
   struct sync_link* next;
+  struct sync_link* prev;
 } sync_link, *sync_link_ptr;
 
 /* Przemyślenia:
@@ -84,14 +86,24 @@ Może warto dodać możliwość markowania automatów w topologii
 i, podobnie, markowanie stanów w automacie. Czyli:
 
 void mark_automaton(automaton_ptr aut);
+void clear_automaton(automaton_ptr aut);
+void is_automaton_marked(automaton_ptr aut);
 void clear_topology(automaton_ptr aut); //clears all automata in topology
-void clear_topology(topology_ptr top);
 
 void mark_state(stateptr spt);
 void clear_state(stateptr spt);
 void clear_automaton(automaton_ptr aut); //clears all states of automaton
 
  */
+
+void mark_automaton(automaton_ptr aut); 
+
+void clear_automaton(automaton_ptr aut);
+
+bool is_automaton_marked(automaton_ptr aut);
+
+/* Removes markings from all the automata in the net. */
+void clear_network(automaton_ptr net); 
 
 void free_automaton(automaton_ptr aut);
 
@@ -129,6 +141,8 @@ void free_sync_links(automaton_ptr aut);
 void free_work_links(automaton_ptr aut);
 
 void copy_work_links(automaton_ptr aut);
+
+void copy_work_links_network(automaton_ptr net);
 
 automaton_ptr read_automaton(char* fname);
 

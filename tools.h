@@ -15,6 +15,8 @@ void free_synchro_array(synchro_array_ptr sarr);
 
 void* grow_ref_array(int* capacity, int size_of_type, void** arr);
 
+bool contains_ref_array(void** arr, int size, void* elt);
+
 bool cstring_array_contains(char** arr, int size, char* elt);
 
 #endif
