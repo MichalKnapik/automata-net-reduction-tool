@@ -7,6 +7,70 @@
 
 automaton_ptr root = NULL;
 
+automaton_ptr get_fresh_automaton(void) {
+
+  automaton_ptr ap = (automaton_ptr) malloc(sizeof(automaton));
+  ap->flags = AUTOM_NONE;
+  ap->next = NULL;
+  ap->prev = NULL;
+  ap->sync_links = NULL;
+  ap->work_links = NULL;
+
+  return ap;
+}
+
+state_ptr copy_state_list(state_ptr sptr) {
+
+  if (sptr == NULL) return NULL;
+
+  state_ptr bptr = (state_ptr) malloc(sizeof(state));
+  bptr->name = strndup(sptr->name, MAXTOKENLENGTH);
+  bptr->next = NULL;
+  bptr->outgoing = NULL;
+
+  state_ptr cptr = bptr;
+  sptr = sptr->next;
+
+  while (sptr != NULL) {
+    cptr->next = (state_ptr) malloc(sizeof(state));
+    cptr = cptr->next;
+    cptr->name = strndup(sptr->name, MAXTOKENLENGTH);
+    cptr->next = NULL;
+    cptr->outgoing = NULL;
+
+    sptr = sptr->next;
+  }
+
+  return bptr;
+}
+
+
+state_ptr make_state(const char* stname) {
+
+    state_ptr st = (state_ptr) malloc(sizeof(state));
+    st->next = NULL;
+    st->outgoing = NULL;
+    st->name = NULL;
+
+    return st;
+}
+
+void add_state(automaton_ptr aut, const char* stname) {
+
+  state_ptr sptr = aut->states;
+
+  if (sptr == NULL) {
+    aut->states = make_state(stname);
+    return;
+  }
+
+  while (sptr->next != NULL) {
+    sptr = sptr->next;
+  }
+  sptr->next = make_state(stname);
+
+}
+
 void mark_automaton(automaton_ptr aut) {
   aut->flags |= AUTOM_MARKED;
 }
@@ -42,10 +106,10 @@ void free_automaton(automaton_ptr aut) {
 
     tp = st->outgoing;
     while (tp != NULL) {
-     tnxt = tp->next;
-     free(tp->name);
-     free(tp);
-     tp = tnxt;
+      tnxt = tp->next;
+      free(tp->name);
+      free(tp);
+      tp = tnxt;
     }
 
     free(st);
@@ -71,7 +135,7 @@ void free_automaton(automaton_ptr aut) {
 void display_automaton(automaton_ptr aut) {
 
   if (aut->flags & AUTOM_MARKED) printf("Marked ");
-    else printf("Unmarked ");
+  else printf("Unmarked ");
 
   printf("automaton (%p) with states: ", aut);
   state_ptr st = aut->states;
@@ -94,7 +158,7 @@ void display_automaton(automaton_ptr aut) {
 
   printf("\nsynchronises with:");
   if (aut->sync_links != NULL) {
-  print_synchro_links(aut, MAIN_SYNCHRO_LINKS);
+    print_synchro_links(aut, MAIN_SYNCHRO_LINKS);
   } else printf(" (nothing)");
 
   printf("\nthe working synchronisation list:");
@@ -179,7 +243,7 @@ bool collect_incidence_lists(automaton_ptr aut) {
     if (trg == NULL) {
       printf("unknown target %s\n", pptr->target);
       return false;
-      }
+    }
 
     transition_ptr tr = (transition_ptr) malloc(sizeof(transition));
     tr->source = src;
@@ -354,19 +418,19 @@ automaton_ptr read_automaton(char* fname) {
 
   extern FILE* yyin;
 
-   if((yyin = fopen(fname, "r")) == NULL) {
-     perror("an issue with reading models");
-     exit(1);
-   }
+  if((yyin = fopen(fname, "r")) == NULL) {
+    perror("an issue with reading models");
+    exit(1);
+  }
 
-   yyrestart(yyin);
+  yyrestart(yyin);
 
-   automaton_ptr retv = NULL;
-   if (!yyparse()) retv = root;
+  automaton_ptr retv = NULL;
+  if (!yyparse()) retv = root;
 
-   fclose(yyin);
+  fclose(yyin);
 
-   return retv;
+  return retv;
 }
 
 void automaton_to_dot(automaton_ptr aut, int automaton_ctr, FILE* dotf) {

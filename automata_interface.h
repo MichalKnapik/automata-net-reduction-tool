@@ -49,8 +49,8 @@ typedef struct AUTOMATON {
   state_ptr states; //call collect_incidence_lists(.) to build transitions
 
   //navigate in the network
-  struct AUTOMATON* next; 
-  struct AUTOMATON* prev; 
+  struct AUTOMATON* next;
+  struct AUTOMATON* prev;
 
   //an array of synchronisation links with other automata
   struct sync_link* sync_links;
@@ -63,9 +63,9 @@ typedef struct AUTOMATON {
      - sync_action_names: copied via memcpy so needs to be freed;
      - next: not copied, created with the new list.
   */
-  struct sync_link* work_links; 
+  struct sync_link* work_links;
 
-  parsed_transition_ptr parsed_transitions;  
+  parsed_transition_ptr parsed_transitions;
 
 } automaton, *automaton_ptr;
 
@@ -95,6 +95,18 @@ void clear_state(stateptr spt);
 void clear_automaton(automaton_ptr aut); //clears all states of automaton
 
  */
+
+/* Everything gets set to NULL but flags set to AUTOM_NONE. */
+automaton_ptr get_fresh_automaton(void);
+
+/* A shallow copy of sptr. Needed for square products. Does not
+   copy outgoing transitions and sets them to NULL. */
+state_ptr copy_state_list(state_ptr sptr);
+
+/* The string stname is not copied via strdup. */
+state_ptr make_state(const char* stname);
+
+void add_state(automaton_ptr aut, const char* stname); //test
 
 void mark_automaton(automaton_ptr aut); 
 

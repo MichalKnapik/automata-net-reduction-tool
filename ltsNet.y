@@ -39,35 +39,28 @@ extern automaton_ptr root;
 
 component: STATES statelist TRANSITIONS translist
  {
-   automaton_ptr ap = (automaton_ptr) malloc(sizeof(automaton));
+   automaton_ptr ap = get_fresh_automaton();
    ap->states = $2;
    ap->parsed_transitions = $4;
-   ap->flags = AUTOM_NONE;
-   ap->next = NULL;
-   ap->prev = NULL;
-   ap->sync_links = NULL;
-   ap->work_links = NULL;   
    $$ = ap;
    root = ap;
  }
 ;
 
 statelist: state statelist
-  {
+ {
     $1->next = $2;
     $$ = $1;
-  }
+ }
 | state { $$ = $1; }
 ;
 
 state: ALPHASTRING
-  {
-    state_ptr st = (state_ptr) malloc(sizeof(state));
+ {
+    state_ptr st = make_state(st->name);
     st->name = $1;
-    st->next = NULL;
-    st->outgoing = NULL;
     $$ = st;
-  }
+ }
 ;
 
 translist: trans translist
