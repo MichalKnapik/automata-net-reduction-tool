@@ -92,13 +92,15 @@ void display_automaton(automaton_ptr aut) {
     print_incidence_list(aut);
   } else printf(" (not computed)");
 
-  printf("\nsynchronises with: ");
+  printf("\nsynchronises with:");
+  if (aut->sync_links != NULL) {
   print_synchro_links(aut, MAIN_SYNCHRO_LINKS);
+  } else printf(" (nothing)");
 
   printf("\nthe working synchronisation list:");
   if (aut->work_links != NULL) {
     print_synchro_links(aut, WORKER_SYNCHRO_LINKS);
-  } else printf(" (not computed)");
+  } else printf(" (empty or not computed)");
 
 }
 
@@ -115,12 +117,6 @@ void display_network(automaton_ptr aut) {
 }
 
 void print_synchro_links(automaton_ptr aut, SL_CHOICE ptype) {
-  /* TODO? */
-  /* if ((ptype == MAIN_SYNCHRO_LINKS && aut->sync_links == NULL) */
-  /*     || (ptype == WORKER_SYNCHRO_LINKS && aut->work_links == NULL)) { */
-  /*   printf("(none)"); */
-  /*   return; */
-  /* } */
 
   sync_link_ptr linx = NULL;
   if (ptype == MAIN_SYNCHRO_LINKS) {
@@ -373,7 +369,29 @@ automaton_ptr read_automaton(char* fname) {
    return retv;
 }
 
-bool automaton_to_dot(automaton_ptr aut, char* dotfname) {
+void automaton_to_dot(automaton_ptr aut, int automaton_ctr, FILE* dotf) {
+
+  fprintf(dotf, "subgraph cluster%d {\n", automaton_ctr);
+  state_ptr state = aut->states;
+  fprintf(dotf, "N%dN%s [style = filled, color = green, label = %s];\n", automaton_ctr, state->name, state->name);
+  for (state = state->next; state != NULL; state = state->next) {
+    fprintf(dotf, "N%dN%s [style = filled, color = yellow, label = %s];\n", automaton_ctr, state->name, state->name);
+  }
+
+  for (state = aut->states; state != NULL; state = state->next) {
+
+    for (transition_ptr trans = state->outgoing; trans != NULL; trans = trans->next) {
+      fprintf(dotf, "N%dN%s -- N%dN%s [label = \"%s\"];\n", automaton_ctr, trans->source->name, automaton_ctr, trans->target->name, trans->name);
+    }
+
+  }
+
+  fprintf(dotf, "label = \"automaton: %p\\n\\n\";\n", aut);
+  fprintf(dotf, "labelloc = t;\n");
+  fprintf(dotf, "}\n");
+}
+
+bool network_to_dot(automaton_ptr net, char* dotfname) {
 
   FILE* dotf = NULL;
   if ((dotf = fopen(dotfname, "w")) == NULL) {
@@ -381,21 +399,51 @@ bool automaton_to_dot(automaton_ptr aut, char* dotfname) {
     return false;
   }
 
-  fprintf(dotf, "graph g%p {\n", aut);
-  fprintf(dotf, "%s [style = filled, color = green];\n", aut->states->name);
-  for (state_ptr state = aut->states; state != NULL; state = state->next) {
+  int mod_ctr = 0;
+  while (net->prev != NULL) net = net->prev;
 
-    for (transition_ptr trans = state->outgoing; trans != NULL; trans = trans->next) {
-      fprintf(dotf, "%s -- %s [label = \"%s\"];\n", trans->source->name, trans->target->name, trans->name);
-    }
-
+  fprintf(dotf, "graph G {\n");
+  fprintf(dotf, "compound = true;\n");
+  while (net->next != NULL) {
+    automaton_to_dot(net, mod_ctr++, dotf);
+    net = net->next;
   }
-
-  fprintf(dotf, "label = \"automaton: %p\\n\\n\";\n", aut);
-  fprintf(dotf, "labelloc = t;\n");
-  fprintf(dotf, "}");
+  fprintf(dotf, "}\n");
 
   if (dotf != NULL) fclose(dotf);
 
+  return true;
+}
+
+bool working_topology_to_dot(automaton_ptr net, char* dotfname) {
+
+  FILE* dotf = NULL;
+  if ((dotf = fopen(dotfname, "w")) == NULL) {
+    perror("can't write dot file");
+    return false;
+  }
+
+  while (net->prev != NULL) net = net->prev;
+
+  fprintf(dotf, "graph Sync {\n");
+  sync_link_ptr slp = NULL;
+
+  while (net != NULL) {
+    slp = net->work_links;
+
+    while (slp != NULL) {
+      fprintf(dotf, "A%p -- A%p [label = \"", net, slp->other);
+      for(int i = 0; i < slp->sync_action_ctr; ++i) {
+        fprintf(dotf, "%s ", slp->sync_action_names[i]);
+      }
+      fprintf(dotf, "\"];\n");
+      slp = slp->next;
+    }
+
+    net = net->next;
+  }
+  fprintf(dotf, "}\n");
+
+  if (dotf != NULL) fclose(dotf);
   return true;
 }

@@ -56,17 +56,17 @@ int main(int argc, char **argv) {
    if (ctr > 1) add_automaton_to_network(autos[0], autos[actr-1], sarr);
  }
 
- //copy work links - zrob to dla calej sieci
-
  display_network(autos[0]);
 
- printf("\nsaving the first automaton to zero.dot\n");
- automaton_to_dot(autos[0], "zero.dot");
+ printf("\nsaving the last automaton to zero.dot\n");
+
+ network_to_dot(autos[actr-2], "net.dot");
 
  make_subtree(autos[0]);
- display_network(autos[0]); //ERR
- 
- //cleanup 
+ display_network(autos[0]);
+ working_topology_to_dot(autos[0], "sync.dot");
+
+ //cleanup
  for (int i = 0; i < actr-1; ++i) free_automaton(autos[i]);
  free_synchro_array(sarr);
 

@@ -146,6 +146,10 @@ void copy_work_links_network(automaton_ptr net);
 
 automaton_ptr read_automaton(char* fname);
 
-bool automaton_to_dot(automaton_ptr aut, char* dotfname);
+void automaton_to_dot(automaton_ptr aut, int automaton_ctr, FILE* dotf);
+
+bool network_to_dot(automaton_ptr net, char* dotfname);
+
+bool working_topology_to_dot(automaton_ptr net, char* dotfname);
 
 #endif
