@@ -50,7 +50,7 @@ state_ptr make_state(const char* stname) {
     state_ptr st = (state_ptr) malloc(sizeof(state));
     st->next = NULL;
     st->outgoing = NULL;
-    st->name = NULL;
+    st->name = stname;
 
     return st;
 }

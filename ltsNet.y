@@ -57,8 +57,7 @@ statelist: state statelist
 
 state: ALPHASTRING
  {
-    state_ptr st = make_state(st->name);
-    st->name = $1;
+    state_ptr st = make_state($1);
     $$ = st;
  }
 ;
