@@ -104,9 +104,9 @@ automaton_ptr get_fresh_automaton(void);
 state_ptr copy_state_list(state_ptr sptr);
 
 /* The string stname is not copied via strdup. */
-state_ptr make_state(const char* stname);
+state_ptr make_state(char* stname);
 
-void add_state(automaton_ptr aut, const char* stname); //test
+void add_state(automaton_ptr aut, char* stname); //test
 
 void mark_automaton(automaton_ptr aut); 
 
@@ -129,6 +129,13 @@ void print_synchro_links(automaton_ptr aut, SL_CHOICE ptype);
 void print_incidence_list(automaton_ptr aut);
 
 state_ptr get_state_by_name(automaton_ptr aut, char* state_name);
+
+/* Returns state_name preceded by the pointer aut and "::". */
+char* get_qualified_state_name(automaton_ptr aut, char* state_name);
+
+/* Returns a concatenation of qualified_state_names with "--". */
+char* get_qualified_pair_name(automaton_ptr auta, char* state_namea,
+                              automaton_ptr autb, char* state_nameb);
 
 /* Fills the incidence list of each state of aut. */
 bool collect_incidence_lists(automaton_ptr aut);

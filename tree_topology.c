@@ -41,7 +41,7 @@ automaton_ptr reduce_net(automaton_ptr aut) {
 
   automaton_ptr sq = NULL;
 
-  //a leaf
+  //* a leaf *
   if (aut->work_links == NULL) {
     sq = get_fresh_automaton();
     sq->states = copy_state_list(aut->states);
@@ -50,21 +50,52 @@ automaton_ptr reduce_net(automaton_ptr aut) {
     sq->parsed_transitions = NULL;
 
     return sq;
-  }
+  } else sq = get_fresh_automaton();
 
-  //an internal node
+  //* an internal node *
+
+  //--- first make the states of the product ---
+  //the initial state
+  add_state(sq, strdup("init"));
+
+  //the product states
   sync_link_ptr slp = aut->work_links;
   while (slp != NULL) { //for each child...
-    sq = get_fresh_automaton();
+
     //...make the states of its square product with the root
     for (state_ptr rst = aut->states; rst != NULL; rst = rst->next)
       for (state_ptr otst = slp->other->states; otst != NULL; otst = otst->next) {
-        
+        add_state(sq, get_qualified_pair_name(aut, rst->name, slp->other, otst->name));
       }
-
     slp = slp->next;
   }
 
+  //--- now handle the transitions ---
+
+  //connect the fresh initial state of sq with the initial state of each square product
+  slp = aut->work_links;
+  while (slp != NULL) {
+
+   parsed_transition_ptr tr = (parsed_transition_ptr) malloc(sizeof(parsed_transition));
+   tr->source = "init";
+   tr->name = "epsilon";
+   tr->target = get_qualified_pair_name(aut, aut->states->name,
+                            slp->other, slp->other->states->name);
+   tr->next = NULL;
+
+   if (sq->parsed_transitions == NULL) sq->parsed_transitions = tr;
+   else {
+     tr->next = sq->parsed_transitions;
+     sq->parsed_transitions = tr;
+   }
+
+   slp = slp->next;
+  }
+  display_automaton(sq);
+  //todo - more connections
+
+  //todo - labelings
+  //a teraz przepisac?
   //todo - recursive call and cleanup
 
   return sq;
@@ -100,6 +131,9 @@ int main(int argc, char **argv) {
   make_subtree(autos[0]);
   display_network(autos[0]);
   working_topology_to_dot(autos[0], "sync.dot");
+
+  //test
+  reduce_net(autos[0]);
 
   //cleanup
   for (int i = 0; i < actr-1; ++i) free_automaton(autos[i]);

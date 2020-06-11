@@ -11,6 +11,8 @@ automaton_ptr get_fresh_automaton(void) {
 
   automaton_ptr ap = (automaton_ptr) malloc(sizeof(automaton));
   ap->flags = AUTOM_NONE;
+  ap->states = NULL;
+  ap->parsed_transitions = NULL;
   ap->next = NULL;
   ap->prev = NULL;
   ap->sync_links = NULL;
@@ -45,7 +47,7 @@ state_ptr copy_state_list(state_ptr sptr) {
 }
 
 
-state_ptr make_state(const char* stname) {
+state_ptr make_state(char* stname) {
 
     state_ptr st = (state_ptr) malloc(sizeof(state));
     st->next = NULL;
@@ -55,7 +57,7 @@ state_ptr make_state(const char* stname) {
     return st;
 }
 
-void add_state(automaton_ptr aut, const char* stname) {
+void add_state(automaton_ptr aut, char* stname) {
 
   state_ptr sptr = aut->states;
 
@@ -137,7 +139,7 @@ void display_automaton(automaton_ptr aut) {
   if (aut->flags & AUTOM_MARKED) printf("Marked ");
   else printf("Unmarked ");
 
-  printf("automaton (%p) with states: ", aut);
+  printf("automaton (%p) with states:\n", aut);
   state_ptr st = aut->states;
   while (st != NULL) {
     printf("%s ", st->name);
@@ -146,6 +148,7 @@ void display_automaton(automaton_ptr aut) {
 
   printf("\nand parsed_transitions:\n");
   parsed_transition_ptr tr = aut->parsed_transitions;
+  if (tr == NULL) printf(" (empty)");
   while (tr != NULL) {
     printf("(%s, %s, %s)\n", tr->source, tr->name, tr->target);
     tr = tr->next;
@@ -225,6 +228,27 @@ state_ptr get_state_by_name(automaton_ptr aut, char* state_name) {
 
   return ptr;
 }
+
+char* get_qualified_state_name(automaton_ptr aut, char* state_name) {
+
+  char* state_str = (char*) calloc(MAXTOKENLENGTH, sizeof(char));
+  snprintf(state_str, MAXTOKENLENGTH, "%p:%s", aut, state_name);
+
+  return state_str;
+}
+
+char* get_qualified_pair_name(automaton_ptr auta, char* state_namea,
+                              automaton_ptr autb, char* state_nameb) {
+
+  char* snamea = get_qualified_state_name(auta, state_namea);
+  char* snameb = get_qualified_state_name(autb, state_nameb);
+  strncat(snamea, ",", MAXTOKENLENGTH);
+  strncat(snamea, snameb, MAXTOKENLENGTH);
+  free(snameb);
+
+  return snamea;
+}
+
 
 bool collect_incidence_lists(automaton_ptr aut) {
 
