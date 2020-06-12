@@ -45,7 +45,7 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
   if (aut->work_links == NULL) {
     sq = get_fresh_automaton();
     sq->states = copy_state_list(aut->states);
-    sq->parsed_transitions = aut->parsed_transitions; 
+    sq->parsed_transitions = aut->parsed_transitions; //ew. skopiuj
     assert(collect_incidence_lists(sq));
     //sq->parsed_transitions = NULL; //TODO - przesun to do cleanupu, ale tylko dla liści (moze zamarkuj liscie?)
 
@@ -55,6 +55,7 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
   //* an internal node *
 
   //--- first make the states of the product ---
+
   //the initial state
   add_state(sq, strdup("init"));
 
@@ -73,21 +74,24 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
 
   //--- now handle the transitions ---
 
-  //connect the fresh initial state of sq with the initial state of each square product
+  //1. connect the fresh initial state of sq with the initial state of each square product
+  //   via epsilon transitions
   slp = aut->work_links;
-  while (slp != NULL) { //for each link...
+  while (slp != NULL) {
     automaton_ptr child = slp->other;
 
     parsed_transition_ptr tr = make_parsed_transition("init", "epsilon",
                                                       get_qualified_pair_name(aut, aut->states->name,
-                                                                              child, child->states->name));
+                                                      child, child->states->name));
 
     add_parsed_transition(sq, tr);
 
     slp = slp->next;
   }
 
-  //add the non-synchronised transitions of square products
+  //2. add the non-synchronised transitions of square products
+
+  //2a. handle the root's transitions
   for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next) {
     for (transition_ptr tp = sptr->outgoing; tp != NULL; tp = tp->next) {
 
@@ -101,17 +105,15 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
           /* printf("%s %s %s\n", tp->source->name, tp->name, tp->target->name); */
           //todo
         } else {
-          //handle a local transition of the root
-          /* printf("no sync with %p\n", slp); */
-          /* printf("%s %s %s\n", tp->source->name, tp->name, tp->target->name); */
-
+          //handle a local transition of the root:
+          //add transition [(sptr, childst), tp->name, (tp(sptr), childst)] for any childst
           for (state_ptr childst = child->states; childst != NULL; childst = childst->next) {
             parsed_transition_ptr tr = make_parsed_transition(get_qualified_pair_name(aut, tp->source->name, child, childst->name),
                                    tp->name,
                                    get_qualified_pair_name(aut, tp->target->name, child, childst->name));
             add_parsed_transition(sq, tr);
           }
-          //todo
+
         }
 
         slp = slp->next;
@@ -121,9 +123,28 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
 
   }
 
-  //handle local transitions of each child
+  //2b. handle local transitions of each child
+  //    self-note: do not optimize it by merging with the above cases
+  //    (this might be horrible, but it's even worse if added above; prefer more clarity)
+  for (slp = aut->work_links; slp != NULL; slp = slp->next) { //for each link...
+    automaton_ptr child = slp->other;
+    for (state_ptr childst = child->states; childst != NULL; childst = childst->next) { //...take the child's state...
+      for (transition_ptr tp = childst->outgoing; tp != NULL; tp = tp->next) {//...and a transition leaving it...
+        if (!automaton_knows_transition(aut, tp->name, sarr)) {//...ensure that it's child's local transition...
+          //...and add transition [(rootst,childst), tp->name, (rootst, tp(childst))] for any rootst
+          char* target_name = tp->target->name;
+          for (state_ptr rootst = aut->states; rootst != NULL; rootst = rootst->next) {
+            parsed_transition_ptr tr = make_parsed_transition(get_qualified_pair_name(aut, rootst->name, child, childst->name),
+                                   tp->name,
+                                   get_qualified_pair_name(aut, rootst->name, child, target_name));
+            add_parsed_transition(sq, tr);
+          }
+        }
 
-  //todo - more connections
+      }
+
+    }
+  }
 
   //todo - labelings
   //a teraz przepisac?
@@ -131,6 +152,8 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
 
   assert(collect_incidence_lists(sq)); //koniecznie!
   display_automaton(sq);
+
+  exit (1);  
   return sq;
 }
 
