@@ -39,7 +39,7 @@ typedef struct TRANSITION {
   char* name;
   state_ptr target;
   struct TRANSITION* next;
-  struct TRANSITION* prev;  
+  struct TRANSITION* prev;
 } transition, *transition_ptr;
 
 /* A bidirectional list of all the automata in a network. */
@@ -61,8 +61,7 @@ typedef struct AUTOMATON {
      is as follows:
      - other: reference is copied and needs no cleanup;
      - sync_action_names: copied via memcpy so needs to be freed;
-     - next: not copied, created with the new list.
-  */
+     - next: not copied, created with the new list. */
   struct sync_link* work_links;
 
   parsed_transition_ptr parsed_transitions;
@@ -106,7 +105,9 @@ state_ptr copy_state_list(state_ptr sptr);
 /* The string stname is not copied via strdup. */
 state_ptr make_state(char* stname);
 
-void add_state(automaton_ptr aut, char* stname); //test
+void add_state(automaton_ptr aut, char* stname);
+
+void add_parsed_transition(automaton_ptr aut, parsed_transition_ptr tr);
 
 void mark_automaton(automaton_ptr aut); 
 
@@ -147,8 +148,11 @@ bool collect_incidence_lists(automaton_ptr aut);
    common labels. */
 void add_automaton_to_network(automaton_ptr net, automaton_ptr new_automaton, synchro_array_ptr sarr);
 
+/* For memory management: all parameters are strdup-ed. */
+parsed_transition_ptr make_parsed_transition(char* source, char* name, char* target);
+
 /* Returns true iff aut has registered trans_name as an action label and (trans_name is in sarr
-   or sarr is NULL. */
+or sarr is NULL. */
 bool automaton_knows_transition(automaton_ptr aut, char* trans_name, synchro_array_ptr sarr);
 
 void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd, synchro_array_ptr sarr);

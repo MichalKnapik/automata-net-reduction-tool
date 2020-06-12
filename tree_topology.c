@@ -37,7 +37,7 @@ void make_subtree(automaton_ptr aut) {
 }
 
 //TODO
-automaton_ptr reduce_net(automaton_ptr aut) {
+automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
 
   automaton_ptr sq = NULL;
 
@@ -45,9 +45,9 @@ automaton_ptr reduce_net(automaton_ptr aut) {
   if (aut->work_links == NULL) {
     sq = get_fresh_automaton();
     sq->states = copy_state_list(aut->states);
-    sq->parsed_transitions = aut->parsed_transitions;
+    sq->parsed_transitions = aut->parsed_transitions; 
     assert(collect_incidence_lists(sq));
-    sq->parsed_transitions = NULL;
+    //sq->parsed_transitions = NULL; //TODO - przesun to do cleanupu, ale tylko dla liści (moze zamarkuj liscie?)
 
     return sq;
   } else sq = get_fresh_automaton();
@@ -60,12 +60,13 @@ automaton_ptr reduce_net(automaton_ptr aut) {
 
   //the product states
   sync_link_ptr slp = aut->work_links;
-  while (slp != NULL) { //for each child...
+  while (slp != NULL) { //for each link...
+    automaton_ptr child = slp->other;
 
     //...make the states of its square product with the root
     for (state_ptr rst = aut->states; rst != NULL; rst = rst->next)
-      for (state_ptr otst = slp->other->states; otst != NULL; otst = otst->next) {
-        add_state(sq, get_qualified_pair_name(aut, rst->name, slp->other, otst->name));
+      for (state_ptr otst = child->states; otst != NULL; otst = otst->next) {
+        add_state(sq, get_qualified_pair_name(aut, rst->name, child, otst->name));
       }
     slp = slp->next;
   }
@@ -74,30 +75,62 @@ automaton_ptr reduce_net(automaton_ptr aut) {
 
   //connect the fresh initial state of sq with the initial state of each square product
   slp = aut->work_links;
-  while (slp != NULL) {
+  while (slp != NULL) { //for each link...
+    automaton_ptr child = slp->other;
 
-   parsed_transition_ptr tr = (parsed_transition_ptr) malloc(sizeof(parsed_transition));
-   tr->source = "init";
-   tr->name = "epsilon";
-   tr->target = get_qualified_pair_name(aut, aut->states->name,
-                            slp->other, slp->other->states->name);
-   tr->next = NULL;
+    parsed_transition_ptr tr = make_parsed_transition("init", "epsilon",
+                                                      get_qualified_pair_name(aut, aut->states->name,
+                                                                              child, child->states->name));
 
-   if (sq->parsed_transitions == NULL) sq->parsed_transitions = tr;
-   else {
-     tr->next = sq->parsed_transitions;
-     sq->parsed_transitions = tr;
-   }
+    add_parsed_transition(sq, tr);
 
-   slp = slp->next;
+    slp = slp->next;
   }
-  display_automaton(sq);
+
+  //add the non-synchronised transitions of square products
+  for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next) {
+    for (transition_ptr tp = sptr->outgoing; tp != NULL; tp = tp->next) {
+
+      slp = aut->work_links;
+      while (slp != NULL) { //for each link...
+        automaton_ptr child = slp->other;
+
+        if (automaton_knows_transition(child, tp->name, sarr)) {
+          //handle a transition synchronised with the child
+          /* printf("sync with %p\n", slp); */
+          /* printf("%s %s %s\n", tp->source->name, tp->name, tp->target->name); */
+          //todo
+        } else {
+          //handle a local transition of the root
+          /* printf("no sync with %p\n", slp); */
+          /* printf("%s %s %s\n", tp->source->name, tp->name, tp->target->name); */
+
+          for (state_ptr childst = child->states; childst != NULL; childst = childst->next) {
+            parsed_transition_ptr tr = make_parsed_transition(get_qualified_pair_name(aut, tp->source->name, child, childst->name),
+                                   tp->name,
+                                   get_qualified_pair_name(aut, tp->target->name, child, childst->name));
+            add_parsed_transition(sq, tr);
+          }
+          //todo
+        }
+
+        slp = slp->next;
+      }
+
+    }
+
+  }
+
+  //handle local transitions of each child
+
   //todo - more connections
 
   //todo - labelings
   //a teraz przepisac?
   //todo - recursive call and cleanup
 
+  assert(collect_incidence_lists(sq)); //koniecznie!
+  display_automaton(sq);
   return sq;
 }
 
@@ -133,7 +166,7 @@ int main(int argc, char **argv) {
   working_topology_to_dot(autos[0], "sync.dot");
 
   //test
-  reduce_net(autos[0]);
+  reduce_net(autos[0], sarr);
 
   //cleanup
   for (int i = 0; i < actr-1; ++i) free_automaton(autos[i]);

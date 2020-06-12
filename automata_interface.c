@@ -9,7 +9,7 @@ automaton_ptr root = NULL;
 
 automaton_ptr get_fresh_automaton(void) {
 
-  automaton_ptr ap = (automaton_ptr) malloc(sizeof(automaton));
+  automaton_ptr ap = malloc(sizeof(automaton));
   ap->flags = AUTOM_NONE;
   ap->states = NULL;
   ap->parsed_transitions = NULL;
@@ -25,7 +25,7 @@ state_ptr copy_state_list(state_ptr sptr) {
 
   if (sptr == NULL) return NULL;
 
-  state_ptr bptr = (state_ptr) malloc(sizeof(state));
+  state_ptr bptr = malloc(sizeof(state));
   bptr->name = strndup(sptr->name, MAXTOKENLENGTH);
   bptr->next = NULL;
   bptr->outgoing = NULL;
@@ -34,7 +34,7 @@ state_ptr copy_state_list(state_ptr sptr) {
   sptr = sptr->next;
 
   while (sptr != NULL) {
-    cptr->next = (state_ptr) malloc(sizeof(state));
+    cptr->next = malloc(sizeof(state));
     cptr = cptr->next;
     cptr->name = strndup(sptr->name, MAXTOKENLENGTH);
     cptr->next = NULL;
@@ -49,7 +49,7 @@ state_ptr copy_state_list(state_ptr sptr) {
 
 state_ptr make_state(char* stname) {
 
-    state_ptr st = (state_ptr) malloc(sizeof(state));
+    state_ptr st = malloc(sizeof(state));
     st->next = NULL;
     st->outgoing = NULL;
     st->name = stname;
@@ -70,6 +70,16 @@ void add_state(automaton_ptr aut, char* stname) {
     sptr = sptr->next;
   }
   sptr->next = make_state(stname);
+
+}
+
+void add_parsed_transition(automaton_ptr aut, parsed_transition_ptr tr) {
+
+   if (aut->parsed_transitions == NULL) aut->parsed_transitions = tr;
+   else {
+     tr->next = aut->parsed_transitions;
+     aut->parsed_transitions = tr;
+   }
 
 }
 
@@ -269,7 +279,7 @@ bool collect_incidence_lists(automaton_ptr aut) {
       return false;
     }
 
-    transition_ptr tr = (transition_ptr) malloc(sizeof(transition));
+    transition_ptr tr = malloc(sizeof(transition));
     tr->source = src;
     tr->target = trg;
     tr->name = strndup(pptr->name, MAXTOKENLENGTH);
@@ -302,6 +312,18 @@ void add_automaton_to_network(automaton_ptr net, automaton_ptr new_automaton, sy
   new_automaton->prev = net;
 }
 
+parsed_transition_ptr make_parsed_transition(char* source, char* name, char* target) {
+
+   parsed_transition_ptr tr = malloc(sizeof(parsed_transition));
+   tr->source = strndup(source, MAXTOKENLENGTH);
+   tr->name = strndup(name, MAXTOKENLENGTH);
+   tr->target = strndup(target, MAXTOKENLENGTH);
+   tr->next = NULL;
+
+   return tr;
+}
+
+
 bool automaton_knows_transition(automaton_ptr aut, char* trans_name, synchro_array_ptr sarr) {
 
   for (parsed_transition_ptr ptr = aut->parsed_transitions; ptr != NULL; ptr = ptr->next) {
@@ -325,7 +347,7 @@ void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd, synchro_array_p
   if (!common) return;
 
   int SYNCINITSIZE = 10;
-  sync_link_ptr new_connection = (sync_link_ptr) malloc(sizeof(sync_link));
+  sync_link_ptr new_connection = malloc(sizeof(sync_link));
   if (!new_connection) {
     perror("sync_automata_one_way: mem allocation error");
     exit(1);
@@ -334,9 +356,9 @@ void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd, synchro_array_p
   new_connection->other = snd;
   new_connection->sync_action_ctr = 0;
   new_connection->sync_action_capacity = SYNCINITSIZE;
-  new_connection->sync_action_names = (char**) malloc(SYNCINITSIZE * sizeof(char*));
+  new_connection->sync_action_names = malloc(SYNCINITSIZE * sizeof(char*));
   new_connection->next = NULL;
-  new_connection->prev = NULL;  
+  new_connection->prev = NULL;
 
   for (parsed_transition_ptr ptr = snd->parsed_transitions; ptr != NULL; ptr = ptr->next) {
 
@@ -407,11 +429,11 @@ void copy_work_links(automaton_ptr aut) {
   for (sync_link_ptr link = aut->sync_links; link != NULL; link = link->next) {
 
     if (bgnptr == NULL) {
-      lptr = (sync_link_ptr) malloc(sizeof(sync_link));
+      lptr = malloc(sizeof(sync_link));
       lptr->prev = NULL;
       bgnptr = lptr;
     } else {
-      lptr->next = (sync_link_ptr) malloc(sizeof(sync_link));
+      lptr->next = malloc(sizeof(sync_link));
       lptr->next->prev = lptr;
       lptr = lptr->next;
     }
@@ -419,7 +441,7 @@ void copy_work_links(automaton_ptr aut) {
     lptr->other = link->other;
     lptr->sync_action_ctr = link->sync_action_ctr;
     lptr->sync_action_capacity = link->sync_action_capacity;
-    lptr->sync_action_names = (char**) malloc(link->sync_action_capacity * sizeof(char*));
+    lptr->sync_action_names = malloc(link->sync_action_capacity * sizeof(char*));
     lptr->next = NULL;
 
     memcpy(lptr->sync_action_names, link->sync_action_names, link->sync_action_ctr * sizeof(char*));
