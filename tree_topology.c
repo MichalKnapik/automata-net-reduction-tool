@@ -36,7 +36,6 @@ void make_subtree(automaton_ptr aut) {
 
 }
 
-//TODO
 automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
 
   automaton_ptr sq = NULL;
@@ -48,7 +47,6 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
     sq->parsed_transitions = aut->parsed_transitions; //ew. skopiuj
     assert(collect_incidence_lists(sq));
     //sq->parsed_transitions = NULL; //TODO - przesun to do cleanupu, ale tylko dla liści (moze zamarkuj liscie?)
-
     return sq;
   } else sq = get_fresh_automaton();
 
@@ -73,9 +71,7 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
   }
 
   //--- now handle the transitions ---
-
-  //1. connect the fresh initial state of sq with the initial state of each square product
-  //   via epsilon transitions
+  //1. connect the fresh initial state of sq with the initial state of each square product via epsilon transitions
   slp = aut->work_links;
   while (slp != NULL) {
     automaton_ptr child = slp->other;
@@ -83,14 +79,11 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
     parsed_transition_ptr tr = make_parsed_transition("init", "epsilon",
                                                       get_qualified_pair_name(aut, aut->states->name,
                                                       child, child->states->name));
-
     add_parsed_transition(sq, tr);
-
     slp = slp->next;
   }
 
   //2. add the non-synchronised transitions of square products
-
   //2a. handle the root's transitions
   for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next) {
     for (transition_ptr tp = sptr->outgoing; tp != NULL; tp = tp->next) {
@@ -99,18 +92,33 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
       while (slp != NULL) { //for each link...
         automaton_ptr child = slp->other;
 
-        if (automaton_knows_transition(child, tp->name, sarr)) {
-          //handle a transition synchronised with the child
-          /* printf("sync with %p\n", slp); */
-          /* printf("%s %s %s\n", tp->source->name, tp->name, tp->target->name); */
-          //todo
+        if (automaton_knows_transition(child, tp->name, sarr)) {//TODO - zmienic na is_local!
+          //handle a transition synchronised with the child:
+          // add transition [(sptr,s), tp->name, (tp->target,s'), for any initial state s' of any child
+          //(this works for live-reset automata only!)
+
+          int matching_state_ctr = 0;
+          state_ptr* matching_child_states = get_states_with_enabled(child, tp->name, &matching_state_ctr);
+          for (int i = 0; i < matching_state_ctr; ++i) {
+            for (sync_link_ptr inner_slp = aut->work_links; inner_slp != NULL; inner_slp = inner_slp->next) {
+              automaton_ptr other_child = inner_slp->other;
+              parsed_transition_ptr tr = make_parsed_transition(get_qualified_pair_name(aut, tp->source->name, child, matching_child_states[i]->name),
+                                                              tp->name,
+                                                              get_qualified_pair_name(aut, tp->target->name, other_child, get_initial_state(other_child)->name));
+              add_parsed_transition(sq, tr);
+            }
+          }
+          free(matching_child_states);
+
         } else {
+
           //handle a local transition of the root:
           //add transition [(sptr, childst), tp->name, (tp(sptr), childst)] for any childst
           for (state_ptr childst = child->states; childst != NULL; childst = childst->next) {
-            parsed_transition_ptr tr = make_parsed_transition(get_qualified_pair_name(aut, tp->source->name, child, childst->name),
-                                   tp->name,
-                                   get_qualified_pair_name(aut, tp->target->name, child, childst->name));
+            parsed_transition_ptr tr = make_parsed_transition(
+                                       get_qualified_pair_name(aut, tp->source->name, child, childst->name),
+                                       tp->name,
+                                       get_qualified_pair_name(aut, tp->target->name, child, childst->name));
             add_parsed_transition(sq, tr);
           }
 
@@ -130,7 +138,7 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
     automaton_ptr child = slp->other;
     for (state_ptr childst = child->states; childst != NULL; childst = childst->next) { //...take the child's state...
       for (transition_ptr tp = childst->outgoing; tp != NULL; tp = tp->next) {//...and a transition leaving it...
-        if (!automaton_knows_transition(aut, tp->name, sarr)) {//...ensure that it's child's local transition...
+        if (!automaton_knows_transition(aut, tp->name, sarr)) {//...ensure that it's child's local transition...TODO??
           //...and add transition [(rootst,childst), tp->name, (rootst, tp(childst))] for any rootst
           char* target_name = tp->target->name;
           for (state_ptr rootst = aut->states; rootst != NULL; rootst = rootst->next) {
@@ -151,10 +159,18 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
   //todo - recursive call and cleanup
 
   assert(collect_incidence_lists(sq)); //koniecznie!
-  display_automaton(sq);
-
-  exit (1);  
   return sq;
+}
+
+void mark_root_live_states(automaton_ptr aut, automaton_ptr root) {
+  for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next) {
+    for (transition_ptr tp = sptr->outgoing; tp != NULL; tp = tp->next) {
+      if (automaton_knows_transition(root, tp->name, NULL)) {
+        mark_state(sptr);
+        break;
+      }
+    }
+  }
 }
 
 int main(int argc, char **argv) {
@@ -189,7 +205,13 @@ int main(int argc, char **argv) {
   working_topology_to_dot(autos[0], "sync.dot");
 
   //test
-  reduce_net(autos[0], sarr);
+  automaton_ptr red = reduce_net(autos[0], sarr);
+  printf("\n\n\n");
+  display_automaton(red);
+  printf("\n\n\n");
+
+  mark_root_live_states(red, autos[0]);
+  network_to_dot(red, "reduced.dot");
 
   //cleanup
   for (int i = 0; i < actr-1; ++i) free_automaton(autos[i]);

@@ -25,10 +25,11 @@ typedef struct TR {
   struct TR* next;
 } parsed_transition, *parsed_transition_ptr;
 
-/* An unidirectional list of states in an automaton. The outgoing 
+/* An unidirectional list of states in an automaton. The outgoing
    transitions list is filled with collect_incidence_lists(.) call. */
 typedef struct STATE {
   char* name;
+  bool marked;
   struct STATE* next;
   struct TRANSITION* outgoing;
 } state, *state_ptr;
@@ -107,6 +108,23 @@ state_ptr make_state(char* stname);
 
 void add_state(automaton_ptr aut, char* stname);
 
+/* For now, (aut->states)[0] is the init state ptr. */
+state_ptr get_initial_state(automaton_ptr aut);
+
+void mark_state(state_ptr spt);
+
+void clear_state(state_ptr spt);
+
+/* Unmarks all the states of aut. */
+void clear_all_states(automaton_ptr aut);
+
+/* Given an automaton aut marks those states from which a state
+   already marked is reachable. */
+void mark_reachable(automaton_ptr aut);
+
+/* Marks the states labeled by an action from sarr. */
+void mark_sync_states(automaton_ptr aut, synchro_array_ptr sarr);
+
 void add_parsed_transition(automaton_ptr aut, parsed_transition_ptr tr);
 
 void mark_automaton(automaton_ptr aut); 
@@ -154,6 +172,10 @@ parsed_transition_ptr make_parsed_transition(char* source, char* name, char* tar
 /* Returns true iff aut has registered trans_name as an action label and (trans_name is in sarr
 or sarr is NULL. */
 bool automaton_knows_transition(automaton_ptr aut, char* trans_name, synchro_array_ptr sarr);
+
+/* Returns an array of references to the states of aut labeled with trans_name.
+   Memory management: clear only the array, don't free the states. */
+state_ptr* get_states_with_enabled(automaton_ptr aut, char* trans_name, int* asize);
 
 void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd, synchro_array_ptr sarr);
 

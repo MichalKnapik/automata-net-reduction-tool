@@ -25,32 +25,25 @@ state_ptr copy_state_list(state_ptr sptr) {
 
   if (sptr == NULL) return NULL;
 
-  state_ptr bptr = malloc(sizeof(state));
-  bptr->name = strndup(sptr->name, MAXTOKENLENGTH);
-  bptr->next = NULL;
-  bptr->outgoing = NULL;
+  state_ptr bptr = make_state(strndup(sptr->name, MAXTOKENLENGTH));
 
   state_ptr cptr = bptr;
   sptr = sptr->next;
 
   while (sptr != NULL) {
-    cptr->next = malloc(sizeof(state));
+    cptr->next = make_state(strndup(sptr->name, MAXTOKENLENGTH));
     cptr = cptr->next;
-    cptr->name = strndup(sptr->name, MAXTOKENLENGTH);
-    cptr->next = NULL;
-    cptr->outgoing = NULL;
-
     sptr = sptr->next;
   }
 
   return bptr;
 }
 
-
 state_ptr make_state(char* stname) {
 
     state_ptr st = malloc(sizeof(state));
     st->next = NULL;
+    st->marked = false;
     st->outgoing = NULL;
     st->name = stname;
 
@@ -73,6 +66,10 @@ void add_state(automaton_ptr aut, char* stname) {
 
 }
 
+state_ptr get_initial_state(automaton_ptr aut) {
+  return aut->states;
+}
+
 void add_parsed_transition(automaton_ptr aut, parsed_transition_ptr tr) {
 
    if (aut->parsed_transitions == NULL) aut->parsed_transitions = tr;
@@ -80,6 +77,38 @@ void add_parsed_transition(automaton_ptr aut, parsed_transition_ptr tr) {
      tr->next = aut->parsed_transitions;
      aut->parsed_transitions = tr;
    }
+
+}
+
+void mark_state(state_ptr spt) {
+  spt->marked = true;
+}
+
+void clear_state(state_ptr spt) {
+  spt->marked = false;
+}
+
+/* Unmarks all the states of aut. */
+void clear_all_states(automaton_ptr aut) {
+  for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next)
+    clear_state(sptr);
+}
+
+void mark_reachable(automaton_ptr aut) {
+
+  //todo  
+}
+
+void mark_sync_states(automaton_ptr aut, synchro_array_ptr sarr) {
+  for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next) {
+    for (transition_ptr tp = sptr->outgoing; tp != NULL; tp = tp->next) {
+      if (cstring_array_contains(sarr->actions, sarr->ctr, tp->name)) {
+        mark_state(sptr);
+        break;
+      }
+
+    }
+  }
 
 }
 
@@ -152,6 +181,7 @@ void display_automaton(automaton_ptr aut) {
   printf("automaton (%p) with states:\n", aut);
   state_ptr st = aut->states;
   while (st != NULL) {
+    if (st->marked) printf("*");
     printf("%s ", st->name);
     st = st->next;
   }
@@ -242,7 +272,7 @@ state_ptr get_state_by_name(automaton_ptr aut, char* state_name) {
 char* get_qualified_state_name(automaton_ptr aut, char* state_name) {
 
   char* state_str = (char*) calloc(MAXTOKENLENGTH, sizeof(char));
-  snprintf(state_str, MAXTOKENLENGTH, "%p:%s", aut, state_name);
+  snprintf(state_str, MAXTOKENLENGTH, "%p_%s", aut, state_name);
 
   return state_str;
 }
@@ -252,7 +282,7 @@ char* get_qualified_pair_name(automaton_ptr auta, char* state_namea,
 
   char* snamea = get_qualified_state_name(auta, state_namea);
   char* snameb = get_qualified_state_name(autb, state_nameb);
-  strncat(snamea, ",", MAXTOKENLENGTH);
+  strncat(snamea, "_", MAXTOKENLENGTH);
   strncat(snamea, snameb, MAXTOKENLENGTH);
   free(snameb);
 
@@ -333,6 +363,31 @@ bool automaton_knows_transition(automaton_ptr aut, char* trans_name, synchro_arr
 
   return false;
 }
+
+/* Returns an array, of size asize, with the states of aut where trans_name is enabled. */
+state_ptr* get_states_with_enabled(automaton_ptr aut, char* trans_name, int* asize) {
+
+  int SYNCTRANSIZE = 10;
+  int scapacity = SYNCTRANSIZE;
+
+  state_ptr* stt = malloc(sizeof(SYNCTRANSIZE * sizeof(state_ptr)));
+
+  *asize = 0;
+  for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next) {
+    for (transition_ptr tptr = sptr->outgoing; tptr != NULL; tptr = tptr->next) {
+      if (!strcmp(trans_name, tptr->name)) {
+        if ((*asize) >= scapacity) {
+          grow_ref_array(&scapacity, sizeof(state_ptr), (void**) &stt);
+        }
+        stt[(*asize)++] = sptr;
+        break;
+      }
+    }
+  }
+
+  return stt;
+}
+
 
 void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd, synchro_array_ptr sarr) {
 
@@ -482,16 +537,19 @@ automaton_ptr read_automaton(char* fname) {
 void automaton_to_dot(automaton_ptr aut, int automaton_ctr, FILE* dotf) {
 
   fprintf(dotf, "subgraph cluster%d {\n", automaton_ctr);
+  char* color;
   state_ptr state = aut->states;
-  fprintf(dotf, "N%dN%s [style = filled, color = green, label = %s];\n", automaton_ctr, state->name, state->name);
+  if (state->marked) color = "pink"; else color = "yellow";
+  fprintf(dotf, "N%dN%s [style = filled, color = %s, label = \"%s\" shape = invtriangle];\n", automaton_ctr, state->name, color, state->name);
   for (state = state->next; state != NULL; state = state->next) {
-    fprintf(dotf, "N%dN%s [style = filled, color = yellow, label = %s];\n", automaton_ctr, state->name, state->name);
+    if (state->marked) color = "pink"; else color = "yellow";
+    fprintf(dotf, "N%dN%s [style = filled, color = %s, label = \"%s\"];\n", automaton_ctr, state->name, color, state->name);
   }
 
   for (state = aut->states; state != NULL; state = state->next) {
 
     for (transition_ptr trans = state->outgoing; trans != NULL; trans = trans->next) {
-      fprintf(dotf, "N%dN%s -- N%dN%s [label = \"%s\"];\n", automaton_ctr, trans->source->name, automaton_ctr, trans->target->name, trans->name);
+      fprintf(dotf, "N%dN%s -> N%dN%s [label = \"%s\"];\n", automaton_ctr, trans->source->name, automaton_ctr, trans->target->name, trans->name);
     }
 
   }
@@ -512,9 +570,9 @@ bool network_to_dot(automaton_ptr net, char* dotfname) {
   int mod_ctr = 0;
   while (net->prev != NULL) net = net->prev;
 
-  fprintf(dotf, "graph G {\n");
+  fprintf(dotf, "digraph G {\n");
   fprintf(dotf, "compound = true;\n");
-  while (net->next != NULL) {
+  while (net != NULL) {
     automaton_to_dot(net, mod_ctr++, dotf);
     net = net->next;
   }

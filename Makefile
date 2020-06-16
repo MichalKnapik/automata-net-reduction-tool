@@ -10,5 +10,7 @@ all: ltsNet.y ltsNet.l tools.c automata_interface.c tree_topology.c
 clean:
 	rm -rf *~ *.yy.c *.o ltsNet *.tab.*
 
-
-
+dot:
+	dot -Tpdf net.dot -o net.pdf
+	dot -Tpdf sync.dot -o sync.pdf
+	dot -Tpdf reduced.dot -o reduced.pdf
