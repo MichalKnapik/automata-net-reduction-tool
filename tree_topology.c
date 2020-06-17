@@ -92,9 +92,9 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
       while (slp != NULL) { //for each link...
         automaton_ptr child = slp->other;
 
-        if (automaton_knows_transition(child, tp->name, sarr)) {//TODO - zmienic na is_local!
+        if (automaton_knows_transition(child, tp->name, sarr)) {
           //handle a transition synchronised with the child:
-          // add transition [(sptr,s), tp->name, (tp->target,s'), for any initial state s' of any child
+          //add transition [(sptr,s), tp->name, (tp->target,s'), for any initial state s' of any child
           //(this works for live-reset automata only!)
 
           int matching_state_ctr = 0;
@@ -110,8 +110,7 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
           }
           free(matching_child_states);
 
-        } else {
-
+        } else if (is_action_local(aut, tp->name, sarr)) {
           //handle a local transition of the root:
           //add transition [(sptr, childst), tp->name, (tp(sptr), childst)] for any childst
           for (state_ptr childst = child->states; childst != NULL; childst = childst->next) {
@@ -138,7 +137,8 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
     automaton_ptr child = slp->other;
     for (state_ptr childst = child->states; childst != NULL; childst = childst->next) { //...take the child's state...
       for (transition_ptr tp = childst->outgoing; tp != NULL; tp = tp->next) {//...and a transition leaving it...
-        if (!automaton_knows_transition(aut, tp->name, sarr)) {//...ensure that it's child's local transition...TODO??
+        if (!automaton_knows_transition(aut, tp->name, sarr)) {//...ensure that it's child's local transition...
+          //...(warning: we assume that the child has no children here)...
           //...and add transition [(rootst,childst), tp->name, (rootst, tp(childst))] for any rootst
           char* target_name = tp->target->name;
           for (state_ptr rootst = aut->states; rootst != NULL; rootst = rootst->next) {
@@ -160,17 +160,6 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
 
   assert(collect_incidence_lists(sq)); //koniecznie!
   return sq;
-}
-
-void mark_root_live_states(automaton_ptr aut, automaton_ptr root) {
-  for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next) {
-    for (transition_ptr tp = sptr->outgoing; tp != NULL; tp = tp->next) {
-      if (automaton_knows_transition(root, tp->name, NULL)) {
-        mark_state(sptr);
-        break;
-      }
-    }
-  }
 }
 
 int main(int argc, char **argv) {
@@ -202,6 +191,7 @@ int main(int argc, char **argv) {
 
   make_subtree(autos[0]);
   display_network(autos[0]);
+
   working_topology_to_dot(autos[0], "sync.dot");
 
   //test
@@ -210,7 +200,6 @@ int main(int argc, char **argv) {
   display_automaton(red);
   printf("\n\n\n");
 
-  mark_root_live_states(red, autos[0]);
   network_to_dot(red, "reduced.dot");
 
   //cleanup

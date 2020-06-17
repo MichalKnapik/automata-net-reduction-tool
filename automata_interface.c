@@ -70,6 +70,30 @@ state_ptr get_initial_state(automaton_ptr aut) {
   return aut->states;
 }
 
+/* Checks if act_name is a local action of aut, i.e., none of automata
+ connected via work_links knows act_name or it is not in sarr. */
+bool is_action_local(automaton_ptr aut, char* act_name, synchro_array_ptr sarr) {
+
+  /* Note: this is inefficient, caching or precomputing is needed. */
+  bool is_local = true;
+
+  if (!cstring_array_contains(sarr->actions, sarr->ctr, act_name)) return true;
+
+  sync_link_ptr sl = aut->work_links;
+  automaton_ptr neighbour = NULL;
+
+  while (sl != NULL) {
+    neighbour = sl->other;
+    if (automaton_knows_transition(neighbour, act_name, sarr)) {
+      is_local = false;
+      break;
+    }
+    sl = sl->next;
+  }
+
+  return is_local;
+}
+
 void add_parsed_transition(automaton_ptr aut, parsed_transition_ptr tr) {
 
    if (aut->parsed_transitions == NULL) aut->parsed_transitions = tr;
@@ -88,27 +112,24 @@ void clear_state(state_ptr spt) {
   spt->marked = false;
 }
 
-/* Unmarks all the states of aut. */
 void clear_all_states(automaton_ptr aut) {
   for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next)
     clear_state(sptr);
 }
 
-void mark_reachable(automaton_ptr aut) {
+void clear_all_states_in_network(automaton_ptr net) {
 
-  //todo  
+  while (net->prev != NULL) net = net->prev;
+
+  while (net->next != NULL) {
+    clear_all_states(net);
+    net = net->next;
+  }
+
 }
 
-void mark_sync_states(automaton_ptr aut, synchro_array_ptr sarr) {
-  for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next) {
-    for (transition_ptr tp = sptr->outgoing; tp != NULL; tp = tp->next) {
-      if (cstring_array_contains(sarr->actions, sarr->ctr, tp->name)) {
-        mark_state(sptr);
-        break;
-      }
-
-    }
-  }
+void mark_reachable_marked(automaton_ptr aut) {
+  //todo
 
 }
 

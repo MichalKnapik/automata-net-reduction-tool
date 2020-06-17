@@ -80,22 +80,6 @@ typedef struct sync_link {
   struct sync_link* prev;
 } sync_link, *sync_link_ptr;
 
-/* Przemyślenia:
-
-Może warto dodać możliwość markowania automatów w topologii
-i, podobnie, markowanie stanów w automacie. Czyli:
-
-void mark_automaton(automaton_ptr aut);
-void clear_automaton(automaton_ptr aut);
-void is_automaton_marked(automaton_ptr aut);
-void clear_topology(automaton_ptr aut); //clears all automata in topology
-
-void mark_state(stateptr spt);
-void clear_state(stateptr spt);
-void clear_automaton(automaton_ptr aut); //clears all states of automaton
-
- */
-
 /* Everything gets set to NULL but flags set to AUTOM_NONE. */
 automaton_ptr get_fresh_automaton(void);
 
@@ -111,6 +95,12 @@ void add_state(automaton_ptr aut, char* stname);
 /* For now, (aut->states)[0] is the init state ptr. */
 state_ptr get_initial_state(automaton_ptr aut);
 
+/* Checks if act_name is a local action of aut, i.e., none of automata
+ connected via work_links knows act_name or it is not in sarr. */
+bool is_action_local(automaton_ptr aut, char* act_name, synchro_array_ptr sarr);
+
+//-------- tools for marking states in automata/networks --------
+
 void mark_state(state_ptr spt);
 
 void clear_state(state_ptr spt);
@@ -118,23 +108,27 @@ void clear_state(state_ptr spt);
 /* Unmarks all the states of aut. */
 void clear_all_states(automaton_ptr aut);
 
+/* Unmarks all the states of each automaton of net. */
+void clear_all_states_in_network(automaton_ptr net);
+
 /* Given an automaton aut marks those states from which a state
-   already marked is reachable. */
-void mark_reachable(automaton_ptr aut);
+   already marked is reachable. Recursive. */
+void mark_reachable_marked(automaton_ptr aut);
 
-/* Marks the states labeled by an action from sarr. */
-void mark_sync_states(automaton_ptr aut, synchro_array_ptr sarr);
+//----- tools for marking automata in networks/topologies ------
 
-void add_parsed_transition(automaton_ptr aut, parsed_transition_ptr tr);
-
-void mark_automaton(automaton_ptr aut); 
+void mark_automaton(automaton_ptr aut);
 
 void clear_automaton(automaton_ptr aut);
 
 bool is_automaton_marked(automaton_ptr aut);
 
 /* Removes markings from all the automata in the net. */
-void clear_network(automaton_ptr net); 
+void clear_network(automaton_ptr net);
+
+//-------------------------------------------------------------
+
+void add_parsed_transition(automaton_ptr aut, parsed_transition_ptr tr);
 
 void free_automaton(automaton_ptr aut);
 
