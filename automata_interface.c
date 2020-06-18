@@ -45,6 +45,7 @@ state_ptr make_state(char* stname) {
     st->next = NULL;
     st->marked = false;
     st->outgoing = NULL;
+    st->incoming = NULL;
     st->name = stname;
 
     return st;
@@ -112,6 +113,10 @@ void clear_state(state_ptr spt) {
   spt->marked = false;
 }
 
+bool is_state_marked(state_ptr spt) {
+  return spt->marked;
+}
+
 void clear_all_states(automaton_ptr aut) {
   for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next)
     clear_state(sptr);
@@ -129,8 +134,41 @@ void clear_all_states_in_network(automaton_ptr net) {
 }
 
 void mark_reachable_marked(automaton_ptr aut) {
-  //todo
 
+  //todo later: make a proper wrapper for dynamic structs
+  int marked_ctr = 0;
+  int INIT_ARR_SIZE = 1000;
+  int scapacity = INIT_ARR_SIZE;
+
+  state_ptr* stt = malloc(sizeof(INIT_ARR_SIZE * sizeof(state_ptr)));
+
+  for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next) {
+    if (is_state_marked(sptr)) {
+      if (marked_ctr >= scapacity) {
+        grow_ref_array(&scapacity, sizeof(state_ptr), (void**) &stt);
+      }
+      stt[marked_ctr++] = sptr;
+    }
+  }
+  //todo now - use incoming
+
+  free(stt);
+  exit(0);
+}
+
+void remove_marked_states(automaton_ptr aut) {
+  //todo
+}
+
+void mark_states_with_root_active_actions(automaton_ptr root, automaton_ptr aut) {
+  for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next) {
+    for (transition_ptr tp = sptr->outgoing; tp != NULL; tp = tp->next) {
+      if (automaton_knows_transition(root, tp->name, NULL)) {
+        mark_state(sptr);
+        break;
+      }
+    }
+  }
 }
 
 void mark_automaton(automaton_ptr aut) {
@@ -167,6 +205,14 @@ void free_automaton(automaton_ptr aut) {
     free(st->name);
 
     tp = st->outgoing;
+    while (tp != NULL) {
+      tnxt = tp->next;
+      free(tp->name);
+      free(tp);
+      tp = tnxt;
+    }
+
+    tp = st->incoming;
     while (tp != NULL) {
       tnxt = tp->next;
       free(tp->name);
@@ -330,18 +376,27 @@ bool collect_incidence_lists(automaton_ptr aut) {
       return false;
     }
 
-    transition_ptr tr = malloc(sizeof(transition));
-    tr->source = src;
-    tr->target = trg;
-    tr->name = strndup(pptr->name, MAXTOKENLENGTH);
-    tr->next = NULL;
-    tr->prev = NULL;
+    transition_ptr trout = make_transition(strndup(pptr->name, MAXTOKENLENGTH));
+    transition_ptr trin = make_transition(strndup(pptr->name, MAXTOKENLENGTH));
+    trout->source = src;
+    trin->source = src;
+    trout->target = trg;
+    trin->target = trg;
 
-    if (!src->outgoing) src->outgoing = tr;
+    //transitions that leave src
+    if (!src->outgoing) src->outgoing = trout;
     else {
-      src->outgoing->prev = tr;
-      tr->next = src->outgoing;
-      src->outgoing = tr;
+      src->outgoing->prev = trout;
+      trout->next = src->outgoing;
+      src->outgoing = trout;
+    }
+
+    //transitions that leave trg
+    if (!trg->incoming) trg->incoming = trin;
+    else {
+      trg->incoming->prev = trin;
+      trin->next = trg->incoming;
+      trg->incoming = trin;
     }
 
   }
@@ -374,6 +429,17 @@ parsed_transition_ptr make_parsed_transition(char* source, char* name, char* tar
    return tr;
 }
 
+transition_ptr make_transition(char* trname) {
+
+    transition_ptr tr = malloc(sizeof(transition));
+    tr->next = NULL;
+    tr->prev = NULL;
+    tr->source = NULL;
+    tr->target = NULL;
+    tr->name = trname;
+
+    return tr;
+}
 
 bool automaton_knows_transition(automaton_ptr aut, char* trans_name, synchro_array_ptr sarr) {
 
@@ -388,7 +454,7 @@ bool automaton_knows_transition(automaton_ptr aut, char* trans_name, synchro_arr
 /* Returns an array, of size asize, with the states of aut where trans_name is enabled. */
 state_ptr* get_states_with_enabled(automaton_ptr aut, char* trans_name, int* asize) {
 
-  int SYNCTRANSIZE = 10;
+  int SYNCTRANSIZE = 100;
   int scapacity = SYNCTRANSIZE;
 
   state_ptr* stt = malloc(sizeof(SYNCTRANSIZE * sizeof(state_ptr)));

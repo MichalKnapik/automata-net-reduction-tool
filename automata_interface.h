@@ -25,13 +25,14 @@ typedef struct TR {
   struct TR* next;
 } parsed_transition, *parsed_transition_ptr;
 
-/* An unidirectional list of states in an automaton. The outgoing
-   transitions list is filled with collect_incidence_lists(.) call. */
+/* An unidirectional list of states in an automaton. The outgoing and
+   incoming transitions lists are filled with collect_incidence_lists(.). */
 typedef struct STATE {
   char* name;
   bool marked;
   struct STATE* next;
   struct TRANSITION* outgoing;
+  struct TRANSITION* incoming;
 } state, *state_ptr;
 
 /* A bidirectional list of all the transitions in an automaton. */
@@ -103,6 +104,8 @@ bool is_action_local(automaton_ptr aut, char* act_name, synchro_array_ptr sarr);
 
 void mark_state(state_ptr spt);
 
+bool is_state_marked(state_ptr spt);
+
 void clear_state(state_ptr spt);
 
 /* Unmarks all the states of aut. */
@@ -112,8 +115,16 @@ void clear_all_states(automaton_ptr aut);
 void clear_all_states_in_network(automaton_ptr net);
 
 /* Given an automaton aut marks those states from which a state
-   already marked is reachable. Recursive. */
+   already marked is reachable. Recursive. (TODO)*/
 void mark_reachable_marked(automaton_ptr aut);
+
+/* Removes the marked states from automaton aut. Also
+   frees the memory, etc. (TODO)*/
+void remove_marked_states(automaton_ptr aut);
+
+/* Marks in aut those states where an action with label known to
+   root is executable. Used in pruning of square products. */
+void mark_states_with_root_active_actions(automaton_ptr root, automaton_ptr aut);
 
 //----- tools for marking automata in networks/topologies ------
 
@@ -162,6 +173,9 @@ void add_automaton_to_network(automaton_ptr net, automaton_ptr new_automaton, sy
 
 /* For memory management: all parameters are strdup-ed. */
 parsed_transition_ptr make_parsed_transition(char* source, char* name, char* target);
+
+/* The string trname is not copied via strdup. */
+transition_ptr make_transition(char* trname);
 
 /* Returns true iff aut has registered trans_name as an action label and (trans_name is in sarr
 or sarr is NULL. */

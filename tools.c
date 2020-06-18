@@ -42,7 +42,7 @@ void free_synchro_array(synchro_array_ptr sarr) {
 }
 
 void* grow_ref_array(int* capacity, int size_of_type, void** arr) {
-
+  //maybe move to realloc?
   void* new_act_array = malloc( 2 * (*capacity) * size_of_type);
   if (new_act_array == NULL) {
     perror("array growth error");

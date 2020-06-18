@@ -200,6 +200,8 @@ int main(int argc, char **argv) {
   display_automaton(red);
   printf("\n\n\n");
 
+  mark_states_with_root_active_actions(autos[0], red);
+  mark_reachable_marked(red);
   network_to_dot(red, "reduced.dot");
 
   //cleanup
