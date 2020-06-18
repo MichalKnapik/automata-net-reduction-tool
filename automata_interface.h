@@ -4,6 +4,11 @@
 #include "common.h"
 #include "tools.h"
 
+//careful with this; added to suppress warnings
+void yyerror(char* s);
+int yylex(void);
+void yyrestart(FILE *input_file);
+
 /************** Data structures **************/
 
 struct TRANSITION;
@@ -13,11 +18,6 @@ typedef char auto_flags;
 #define AUTOM_NONE 0x0
 #define AUTOM_INCIDENCE_OK 0x1
 #define AUTOM_MARKED 0x2
-
-//careful with this; added to suppress warnings
-void yyerror(char* s);
-int yylex(void);
-void yyrestart(FILE *input_file);
 
 /* Auxiliary: a helper in parsing. */
 typedef struct TR {
@@ -68,6 +68,10 @@ typedef struct AUTOMATON {
      - next: not copied, created with the new list. */
   struct sync_link* work_links;
 
+  /* This turned out to be quite important: everything above is
+     ultimately created from transition_records. So maintain the
+     consistency between transition_records and other data
+     structures. */
   transition_record_ptr transition_records;
 
 } automaton, *automaton_ptr;
@@ -100,61 +104,18 @@ void add_state(automaton_ptr aut, char* stname);
 /* For now, (aut->states)[0] is the init state ptr. */
 state_ptr get_initial_state(automaton_ptr aut);
 
+bool is_state_initial(automaton_ptr aut, state_ptr state);
+
 /* Checks if act_name is a local action of aut, i.e., none of automata
  connected via work_links knows act_name or it is not in sarr. */
 bool is_action_local(automaton_ptr aut, char* act_name, synchro_array_ptr sarr);
 
-//-------- tools for marking states in automata/networks --------
-
-void mark_state(state_ptr spt);
-
-bool is_state_marked(state_ptr spt);
-
-void clear_state(state_ptr spt);
-
-/* Unmarks all the states of aut. */
-void clear_all_states(automaton_ptr aut);
-
-/* Unmarks all the states of each automaton of net. */
-void clear_all_states_in_network(automaton_ptr net);
-
-/* Given an automaton aut marks those states from which a state
-   already marked is reachable. Recursive. (TODO)*/
-void mark_reachable_marked(automaton_ptr aut);
-
-/* Removes the marked states from automaton aut. Also
-   frees the memory, etc. (TODO now - or maybe it should return a new automaton?)*/
-void remove_marked_states(automaton_ptr aut);
-
-/* Marks in aut those states where an action with label known to
-   root is executable. Used in pruning of square products. */
-void mark_states_with_root_active_actions(automaton_ptr root, automaton_ptr aut);
-
-//----- tools for marking automata in networks/topologies ------
-
-void mark_automaton(automaton_ptr aut);
-
-void clear_automaton(automaton_ptr aut);
-
-bool is_automaton_marked(automaton_ptr aut);
-
-/* Removes markings from all the automata in the net. */
-void clear_network(automaton_ptr net);
-
-//-------------------------------------------------------------
+/* Nothing here is copied via strdup. */
+transition_record_ptr make_transition_record(char* src_name, char* act_name, char* target_name);
 
 void add_transition_record(automaton_ptr aut, transition_record_ptr tr);
 
 void free_automaton(automaton_ptr aut);
-
-void display_automaton(automaton_ptr aut);
-
-void display_network(automaton_ptr aut);
-
-typedef enum {MAIN_SYNCHRO_LINKS, WORKER_SYNCHRO_LINKS} SL_CHOICE;
-void print_synchro_links(automaton_ptr aut, SL_CHOICE ptype);
-
-void print_incidence_list(automaton_ptr aut);
 
 state_ptr get_state_by_name(automaton_ptr aut, char* state_name);
 
@@ -194,13 +155,61 @@ void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd, synchro_array_p
 
 void sync_automata(automaton_ptr fst, automaton_ptr snd, synchro_array_ptr sarr);
 
+void copy_work_links(automaton_ptr aut);
+
+void copy_work_links_network(automaton_ptr net);
+
 void free_sync_links(automaton_ptr aut);
 
 void free_work_links(automaton_ptr aut);
 
-void copy_work_links(automaton_ptr aut);
+//-------- tools for marking states in automata/networks --------
 
-void copy_work_links_network(automaton_ptr net);
+void mark_state(state_ptr spt);
+
+bool is_state_marked(state_ptr spt);
+
+void clear_state(state_ptr spt);
+
+/* Unmarks all the states of aut. */
+void clear_all_states(automaton_ptr aut);
+
+/* Unmarks all the states of each automaton of net. */
+void clear_all_states_in_network(automaton_ptr net);
+
+/* Given an automaton aut marks those states from which a state
+   already marked is reachable. Recursive. (TODO)*/
+void mark_reachable_marked(automaton_ptr aut);
+
+/* Returns a fresh automaton that contains only the
+   (copies) of the marked states of aut and transitions. */
+automaton_ptr remove_unmarked_states(automaton_ptr aut);
+
+/* Marks in aut those states where an action with label known to
+   root is executable. Used in pruning of square products. */
+void mark_states_with_root_active_actions(automaton_ptr root, automaton_ptr aut);
+
+//----- tools for marking automata in networks/topologies ------
+
+void mark_automaton(automaton_ptr aut);
+
+void clear_automaton(automaton_ptr aut);
+
+bool is_automaton_marked(automaton_ptr aut);
+
+/* Removes markings from all the automata in the net. */
+void clear_network(automaton_ptr net);
+
+//--------------------------------------------------------------
+
+void display_automaton(automaton_ptr aut);
+
+void display_network(automaton_ptr aut);
+
+typedef enum {MAIN_SYNCHRO_LINKS, WORKER_SYNCHRO_LINKS} SL_CHOICE;
+void print_synchro_links(automaton_ptr aut, SL_CHOICE ptype);
+
+void print_incidence_list(automaton_ptr aut);
 
 automaton_ptr read_automaton(char* fname);
 

@@ -207,13 +207,15 @@ int main(int argc, char **argv) {
   display_automaton(red);
   printf("\n\n\n");
 
-  //  mark_states_with_root_active_actions(autos[0], red);
-  //  mark_reachable_marked(red);
+  automaton_ptr rred = remove_unmarked_states(red);
   network_to_dot(red, "reduced.dot");
+  network_to_dot(rred, "rreduced.dot");  
 
   //cleanup
   for (int i = 0; i < actr-1; ++i) free_automaton(autos[i]);
   free_synchro_array(sarr);
+  free(red);
+  free(rred);  
 
   printf("\nDone.\n"); 
 }

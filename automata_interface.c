@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "automata_interface.h"
 #include "ltsNet.tab.h"
 #include "tools.h"
@@ -69,6 +70,10 @@ void add_state(automaton_ptr aut, char* stname) {
 
 state_ptr get_initial_state(automaton_ptr aut) {
   return aut->states;
+}
+
+bool is_state_initial(automaton_ptr aut, state_ptr state) {
+  return (get_initial_state(aut) == state);
 }
 
 /* Checks if act_name is a local action of aut, i.e., none of automata
@@ -171,8 +176,32 @@ void mark_reachable_marked(automaton_ptr aut) {
    free(stt);
 }
 
-void remove_marked_states(automaton_ptr aut) {
-  //todo now
+automaton_ptr remove_unmarked_states(automaton_ptr aut) {
+
+  automaton_ptr aut_rem = get_fresh_automaton();
+
+  //first copy marked states
+  for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next) {
+    if (is_state_marked(sptr)) {
+      add_state(aut_rem, strndup(sptr->name, MAXTOKENLENGTH));
+    }
+  }
+
+  //then copy transition records
+  state_ptr src = NULL;
+  state_ptr trgt = NULL;
+  for (transition_record_ptr trp = aut->transition_records; trp != NULL; trp = trp->next) {
+    src = get_state_by_name(aut, trp->source);
+    trgt = get_state_by_name(aut, trp->target);
+    if (is_state_marked(src) && is_state_marked(trgt)) {
+      add_transition_record(aut_rem, make_transition_record(trp->source, trp->name, trp->target));
+    }
+  }
+
+  //and generate incidence lists
+  assert(collect_incidence_lists(aut_rem));
+
+  return aut_rem;
 }
 
 void mark_states_with_root_active_actions(automaton_ptr root, automaton_ptr aut) {

@@ -14,3 +14,4 @@ dot:
 	dot -Tpdf net.dot -o net.pdf
 	dot -Tpdf sync.dot -o sync.pdf
 	dot -Tpdf reduced.dot -o reduced.pdf
+	dot -Tpdf rreduced.dot -o rreduced.pdf

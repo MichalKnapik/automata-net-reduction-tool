@@ -72,11 +72,7 @@ translist: trans translist
 
 trans: OPENBR ALPHASTRING CMM ALPHASTRING CMM ALPHASTRING CLOSEBR
  {
-   transition_record_ptr tr = malloc(sizeof(transition_record));
-   tr->source = $2;
-   tr->name = $4;
-   tr->target = $6;
-   tr->next = NULL;
+   transition_record_ptr tr = make_transition_record($2, $4, $6);
    $$ = tr;
  }
 ;
