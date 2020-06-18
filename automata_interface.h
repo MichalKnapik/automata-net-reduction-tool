@@ -4,6 +4,8 @@
 #include "common.h"
 #include "tools.h"
 
+/************** Data structures **************/
+
 struct TRANSITION;
 struct sync_link;
 
@@ -23,7 +25,7 @@ typedef struct TR {
   char* name;
   char* target;
   struct TR* next;
-} parsed_transition, *parsed_transition_ptr;
+} transition_record, *transition_record_ptr;
 
 /* An unidirectional list of states in an automaton. The outgoing and
    incoming transitions lists are filled with collect_incidence_lists(.). */
@@ -66,7 +68,7 @@ typedef struct AUTOMATON {
      - next: not copied, created with the new list. */
   struct sync_link* work_links;
 
-  parsed_transition_ptr parsed_transitions;
+  transition_record_ptr transition_records;
 
 } automaton, *automaton_ptr;
 
@@ -80,6 +82,8 @@ typedef struct sync_link {
   struct sync_link* next;
   struct sync_link* prev;
 } sync_link, *sync_link_ptr;
+
+/*********************** Automata/network functions ***********************/
 
 /* Everything gets set to NULL but flags set to AUTOM_NONE. */
 automaton_ptr get_fresh_automaton(void);
@@ -119,7 +123,7 @@ void clear_all_states_in_network(automaton_ptr net);
 void mark_reachable_marked(automaton_ptr aut);
 
 /* Removes the marked states from automaton aut. Also
-   frees the memory, etc. (TODO)*/
+   frees the memory, etc. (TODO now - or maybe it should return a new automaton?)*/
 void remove_marked_states(automaton_ptr aut);
 
 /* Marks in aut those states where an action with label known to
@@ -139,7 +143,7 @@ void clear_network(automaton_ptr net);
 
 //-------------------------------------------------------------
 
-void add_parsed_transition(automaton_ptr aut, parsed_transition_ptr tr);
+void add_transition_record(automaton_ptr aut, transition_record_ptr tr);
 
 void free_automaton(automaton_ptr aut);
 
@@ -161,7 +165,8 @@ char* get_qualified_state_name(automaton_ptr aut, char* state_name);
 char* get_qualified_pair_name(automaton_ptr auta, char* state_namea,
                               automaton_ptr autb, char* state_nameb);
 
-/* Fills the incidence list of each state of aut. */
+/* Fills the incidence lists of each state of aut. Fills both outgoing
+   and incoming lists. */
 bool collect_incidence_lists(automaton_ptr aut);
 
 /* Connects an automaton to the network of automata.
@@ -172,7 +177,7 @@ bool collect_incidence_lists(automaton_ptr aut);
 void add_automaton_to_network(automaton_ptr net, automaton_ptr new_automaton, synchro_array_ptr sarr);
 
 /* For memory management: all parameters are strdup-ed. */
-parsed_transition_ptr make_parsed_transition(char* source, char* name, char* target);
+transition_record_ptr make_transition_record(char* source, char* name, char* target);
 
 /* The string trname is not copied via strdup. */
 transition_ptr make_transition(char* trname);

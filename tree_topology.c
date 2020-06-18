@@ -44,9 +44,9 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
   if (aut->work_links == NULL) {
     sq = get_fresh_automaton();
     sq->states = copy_state_list(aut->states);
-    sq->parsed_transitions = aut->parsed_transitions; //ew. skopiuj
+    sq->transition_records = aut->transition_records; //ew. skopiuj
     assert(collect_incidence_lists(sq));
-    //sq->parsed_transitions = NULL; //TODO - przesun to do cleanupu, ale tylko dla liści (moze zamarkuj liscie?)
+    //sq->transition_records = NULL; //TODO - przesun to do cleanupu, ale tylko dla liści (moze zamarkuj liscie?)
     return sq;
   } else sq = get_fresh_automaton();
 
@@ -76,10 +76,10 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
   while (slp != NULL) {
     automaton_ptr child = slp->other;
 
-    parsed_transition_ptr tr = make_parsed_transition("init", "epsilon",
+    transition_record_ptr tr = make_transition_record("init", "epsilon",
                                                       get_qualified_pair_name(aut, aut->states->name,
                                                       child, child->states->name));
-    add_parsed_transition(sq, tr);
+    add_transition_record(sq, tr);
     slp = slp->next;
   }
 
@@ -102,10 +102,10 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
           for (int i = 0; i < matching_state_ctr; ++i) {
             for (sync_link_ptr inner_slp = aut->work_links; inner_slp != NULL; inner_slp = inner_slp->next) {
               automaton_ptr other_child = inner_slp->other;
-              parsed_transition_ptr tr = make_parsed_transition(get_qualified_pair_name(aut, tp->source->name, child, matching_child_states[i]->name),
+              transition_record_ptr tr = make_transition_record(get_qualified_pair_name(aut, tp->source->name, child, matching_child_states[i]->name),
                                                               tp->name,
                                                               get_qualified_pair_name(aut, tp->target->name, other_child, get_initial_state(other_child)->name));
-              add_parsed_transition(sq, tr);
+              add_transition_record(sq, tr);
             }
           }
           free(matching_child_states);
@@ -114,11 +114,11 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
           //handle a local transition of the root:
           //add transition [(sptr, childst), tp->name, (tp(sptr), childst)] for any childst
           for (state_ptr childst = child->states; childst != NULL; childst = childst->next) {
-            parsed_transition_ptr tr = make_parsed_transition(
+            transition_record_ptr tr = make_transition_record(
                                        get_qualified_pair_name(aut, tp->source->name, child, childst->name),
                                        tp->name,
                                        get_qualified_pair_name(aut, tp->target->name, child, childst->name));
-            add_parsed_transition(sq, tr);
+            add_transition_record(sq, tr);
           }
 
         }
@@ -142,10 +142,10 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
           //...and add transition [(rootst,childst), tp->name, (rootst, tp(childst))] for any rootst
           char* target_name = tp->target->name;
           for (state_ptr rootst = aut->states; rootst != NULL; rootst = rootst->next) {
-            parsed_transition_ptr tr = make_parsed_transition(get_qualified_pair_name(aut, rootst->name, child, childst->name),
+            transition_record_ptr tr = make_transition_record(get_qualified_pair_name(aut, rootst->name, child, childst->name),
                                    tp->name,
                                    get_qualified_pair_name(aut, rootst->name, child, target_name));
-            add_parsed_transition(sq, tr);
+            add_transition_record(sq, tr);
           }
         }
 
@@ -154,11 +154,18 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
     }
   }
 
+  assert(collect_incidence_lists(sq)); //needed, don't remove
+
+  //*** At this stage sq is the unreduced square product. Let's reduce it. ***
+  mark_states_with_root_active_actions(aut, sq); //???
+  mark_reachable_marked(sq);
+  //todo - usun
+
   //todo - labelings
   //a teraz przepisac?
   //todo - recursive call and cleanup
 
-  assert(collect_incidence_lists(sq)); //koniecznie!
+
   return sq;
 }
 
@@ -200,8 +207,8 @@ int main(int argc, char **argv) {
   display_automaton(red);
   printf("\n\n\n");
 
-  mark_states_with_root_active_actions(autos[0], red);
-  mark_reachable_marked(red);
+  //  mark_states_with_root_active_actions(autos[0], red);
+  //  mark_reachable_marked(red);
   network_to_dot(red, "reduced.dot");
 
   //cleanup

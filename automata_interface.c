@@ -12,7 +12,7 @@ automaton_ptr get_fresh_automaton(void) {
   automaton_ptr ap = malloc(sizeof(automaton));
   ap->flags = AUTOM_NONE;
   ap->states = NULL;
-  ap->parsed_transitions = NULL;
+  ap->transition_records = NULL;
   ap->next = NULL;
   ap->prev = NULL;
   ap->sync_links = NULL;
@@ -95,12 +95,12 @@ bool is_action_local(automaton_ptr aut, char* act_name, synchro_array_ptr sarr) 
   return is_local;
 }
 
-void add_parsed_transition(automaton_ptr aut, parsed_transition_ptr tr) {
+void add_transition_record(automaton_ptr aut, transition_record_ptr tr) {
 
-   if (aut->parsed_transitions == NULL) aut->parsed_transitions = tr;
+   if (aut->transition_records == NULL) aut->transition_records = tr;
    else {
-     tr->next = aut->parsed_transitions;
-     aut->parsed_transitions = tr;
+     tr->next = aut->transition_records;
+     aut->transition_records = tr;
    }
 
 }
@@ -140,7 +140,8 @@ void mark_reachable_marked(automaton_ptr aut) {
   int INIT_ARR_SIZE = 1000;
   int scapacity = INIT_ARR_SIZE;
 
-  state_ptr* stt = malloc(sizeof(INIT_ARR_SIZE * sizeof(state_ptr)));
+  //stt holds states from which a marked states is reachable
+  state_ptr* stt = malloc(INIT_ARR_SIZE * sizeof(state_ptr));
 
   for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next) {
     if (is_state_marked(sptr)) {
@@ -150,14 +151,28 @@ void mark_reachable_marked(automaton_ptr aut) {
       stt[marked_ctr++] = sptr;
     }
   }
-  //todo now - use incoming
 
-  free(stt);
-  exit(0);
+  //a bit tricky, if dirty: a growing array is treated as a FIFO
+  //with marked_ctr pointing to its end
+  for (int i = 0; i < marked_ctr; ++i) {
+
+    for (transition_ptr iptr = stt[i]->incoming; iptr != NULL; iptr = iptr->next) {
+      state_ptr state_in_preimage = iptr->source;
+      if (!is_state_marked(state_in_preimage)) {
+          if (marked_ctr >= scapacity) {
+            grow_ref_array(&scapacity, sizeof(state_ptr), (void**) &stt);
+          }
+          stt[marked_ctr++] = state_in_preimage;
+          mark_state(state_in_preimage);
+      }
+    }
+
+  }
+   free(stt);
 }
 
 void remove_marked_states(automaton_ptr aut) {
-  //todo
+  //todo now
 }
 
 void mark_states_with_root_active_actions(automaton_ptr root, automaton_ptr aut) {
@@ -224,8 +239,8 @@ void free_automaton(automaton_ptr aut) {
     st = nexts;
   }
 
-  parsed_transition_ptr tr = aut->parsed_transitions;
-  parsed_transition_ptr nextt = NULL;
+  transition_record_ptr tr = aut->transition_records;
+  transition_record_ptr nextt = NULL;
   while (tr != NULL) {
     nextt = tr->next;
     free(tr->source);
@@ -253,8 +268,8 @@ void display_automaton(automaton_ptr aut) {
     st = st->next;
   }
 
-  printf("\nand parsed_transitions:\n");
-  parsed_transition_ptr tr = aut->parsed_transitions;
+  printf("\nand transition_records:\n");
+  transition_record_ptr tr = aut->transition_records;
   if (tr == NULL) printf(" (empty)");
   while (tr != NULL) {
     printf("(%s, %s, %s)\n", tr->source, tr->name, tr->target);
@@ -361,7 +376,7 @@ bool collect_incidence_lists(automaton_ptr aut) {
 
   aut->flags |= AUTOM_INCIDENCE_OK;
 
-  for (parsed_transition_ptr pptr = aut->parsed_transitions;
+  for (transition_record_ptr pptr = aut->transition_records;
        pptr != NULL; pptr = pptr->next) {
 
     state_ptr src = get_state_by_name(aut, pptr->source);
@@ -418,9 +433,9 @@ void add_automaton_to_network(automaton_ptr net, automaton_ptr new_automaton, sy
   new_automaton->prev = net;
 }
 
-parsed_transition_ptr make_parsed_transition(char* source, char* name, char* target) {
+transition_record_ptr make_transition_record(char* source, char* name, char* target) {
 
-   parsed_transition_ptr tr = malloc(sizeof(parsed_transition));
+   transition_record_ptr tr = malloc(sizeof(transition_record));
    tr->source = strndup(source, MAXTOKENLENGTH);
    tr->name = strndup(name, MAXTOKENLENGTH);
    tr->target = strndup(target, MAXTOKENLENGTH);
@@ -443,7 +458,7 @@ transition_ptr make_transition(char* trname) {
 
 bool automaton_knows_transition(automaton_ptr aut, char* trans_name, synchro_array_ptr sarr) {
 
-  for (parsed_transition_ptr ptr = aut->parsed_transitions; ptr != NULL; ptr = ptr->next) {
+  for (transition_record_ptr ptr = aut->transition_records; ptr != NULL; ptr = ptr->next) {
     if (!strcmp(ptr->name, trans_name) &&
         (sarr == NULL || cstring_array_contains(sarr->actions, sarr->ctr, trans_name))) return true;
   }
@@ -479,7 +494,7 @@ state_ptr* get_states_with_enabled(automaton_ptr aut, char* trans_name, int* asi
 void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd, synchro_array_ptr sarr) {
 
   bool common = false;
-  for (parsed_transition_ptr ptr = snd->parsed_transitions; ptr != NULL; ptr = ptr->next) {
+  for (transition_record_ptr ptr = snd->transition_records; ptr != NULL; ptr = ptr->next) {
 
     if (automaton_knows_transition(fst, ptr->name, sarr)) {
       common = true;
@@ -502,7 +517,7 @@ void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd, synchro_array_p
   new_connection->next = NULL;
   new_connection->prev = NULL;
 
-  for (parsed_transition_ptr ptr = snd->parsed_transitions; ptr != NULL; ptr = ptr->next) {
+  for (transition_record_ptr ptr = snd->transition_records; ptr != NULL; ptr = ptr->next) {
 
     if (automaton_knows_transition(fst, ptr->name, sarr)) {
       if (new_connection->sync_action_ctr == new_connection->sync_action_capacity - 1) {

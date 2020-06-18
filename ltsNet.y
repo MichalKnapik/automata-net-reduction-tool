@@ -13,7 +13,7 @@ extern automaton_ptr root;
 %union {
   char* stringval;
   automaton_ptr automptr;
-  parsed_transition_ptr tranptr;
+  transition_record_ptr tranptr;
   state_ptr stateptr;
 }
 
@@ -41,7 +41,7 @@ component: STATES statelist TRANSITIONS translist
  {
    automaton_ptr ap = get_fresh_automaton();
    ap->states = $2;
-   ap->parsed_transitions = $4;
+   ap->transition_records = $4;
    $$ = ap;
    root = ap;
  }
@@ -72,7 +72,7 @@ translist: trans translist
 
 trans: OPENBR ALPHASTRING CMM ALPHASTRING CMM ALPHASTRING CLOSEBR
  {
-   parsed_transition_ptr tr = malloc(sizeof(parsed_transition));
+   transition_record_ptr tr = malloc(sizeof(transition_record));
    tr->source = $2;
    tr->name = $4;
    tr->target = $6;
