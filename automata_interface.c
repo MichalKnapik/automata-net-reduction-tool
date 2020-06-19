@@ -173,6 +173,7 @@ void mark_reachable_marked(automaton_ptr aut) {
     }
 
   }
+
    free(stt);
 }
 
@@ -194,7 +195,9 @@ automaton_ptr remove_unmarked_states(automaton_ptr aut) {
     src = get_state_by_name(aut, trp->source);
     trgt = get_state_by_name(aut, trp->target);
     if (is_state_marked(src) && is_state_marked(trgt)) {
-      add_transition_record(aut_rem, make_transition_record(trp->source, trp->name, trp->target));
+      add_transition_record(aut_rem, make_transition_record(strndup(trp->source, MAXTOKENLENGTH),
+                                                            strndup(trp->name, MAXTOKENLENGTH),
+                                                            strndup(trp->target, MAXTOKENLENGTH)));
     }
   }
 
@@ -465,9 +468,9 @@ void add_automaton_to_network(automaton_ptr net, automaton_ptr new_automaton, sy
 transition_record_ptr make_transition_record(char* source, char* name, char* target) {
 
    transition_record_ptr tr = malloc(sizeof(transition_record));
-   tr->source = strndup(source, MAXTOKENLENGTH);
-   tr->name = strndup(name, MAXTOKENLENGTH);
-   tr->target = strndup(target, MAXTOKENLENGTH);
+   tr->source = source;
+   tr->name = name;
+   tr->target = target;
    tr->next = NULL;
 
    return tr;
@@ -495,7 +498,6 @@ bool automaton_knows_transition(automaton_ptr aut, char* trans_name, synchro_arr
   return false;
 }
 
-/* Returns an array, of size asize, with the states of aut where trans_name is enabled. */
 state_ptr* get_states_with_enabled(automaton_ptr aut, char* trans_name, int* asize) {
 
   int SYNCTRANSIZE = 100;

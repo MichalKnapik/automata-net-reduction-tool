@@ -8,10 +8,9 @@ all: ltsNet.y ltsNet.l tools.c automata_interface.c tree_topology.c
 	$(CC) $(CCOPTS) tools.c ltsNet.tab.c lex.yy.c automata_interface.c tree_topology.c -lfl -o tree_reduce
 
 clean:
-	rm -rf *~ *.yy.c *.o ltsNet *.tab.*
+	rm -rf *~ *.yy.c *.o ltsNet *.tab.* *.dot
 
 dot:
 	dot -Tpdf net.dot -o net.pdf
 	dot -Tpdf sync.dot -o sync.pdf
 	dot -Tpdf reduced.dot -o reduced.pdf
-	dot -Tpdf rreduced.dot -o rreduced.pdf

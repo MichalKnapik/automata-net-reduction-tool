@@ -107,7 +107,7 @@ state_ptr get_initial_state(automaton_ptr aut);
 bool is_state_initial(automaton_ptr aut, state_ptr state);
 
 /* Checks if act_name is a local action of aut, i.e., none of automata
- connected via work_links knows act_name or it is not in sarr. */
+   connected via work_links knows act_name or it is not in sarr. */
 bool is_action_local(automaton_ptr aut, char* act_name, synchro_array_ptr sarr);
 
 /* Nothing here is copied via strdup. */
@@ -136,9 +136,6 @@ bool collect_incidence_lists(automaton_ptr aut);
    a. If sarr is NULL then automata synchronise over any action with
    common labels. */
 void add_automaton_to_network(automaton_ptr net, automaton_ptr new_automaton, synchro_array_ptr sarr);
-
-/* For memory management: all parameters are strdup-ed. */
-transition_record_ptr make_transition_record(char* source, char* name, char* target);
 
 /* The string trname is not copied via strdup. */
 transition_ptr make_transition(char* trname);

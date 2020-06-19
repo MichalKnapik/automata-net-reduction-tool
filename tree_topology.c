@@ -47,6 +47,7 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
     sq->transition_records = aut->transition_records; //ew. skopiuj
     assert(collect_incidence_lists(sq));
     //sq->transition_records = NULL; //TODO - przesun to do cleanupu, ale tylko dla liści (moze zamarkuj liscie?)
+
     return sq;
   } else sq = get_fresh_automaton();
 
@@ -55,6 +56,7 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
   //--- first make the states of the product ---
 
   //the initial state
+
   add_state(sq, strdup("init"));
 
   //the product states
@@ -76,9 +78,9 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
   while (slp != NULL) {
     automaton_ptr child = slp->other;
 
-    transition_record_ptr tr = make_transition_record("init", "epsilon",
+    transition_record_ptr tr = make_transition_record(strdup("init"), strdup("epsilon"),
                                                       get_qualified_pair_name(aut, aut->states->name,
-                                                      child, child->states->name));
+                                                                              child, child->states->name));
     add_transition_record(sq, tr);
     slp = slp->next;
   }
@@ -103,8 +105,8 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
             for (sync_link_ptr inner_slp = aut->work_links; inner_slp != NULL; inner_slp = inner_slp->next) {
               automaton_ptr other_child = inner_slp->other;
               transition_record_ptr tr = make_transition_record(get_qualified_pair_name(aut, tp->source->name, child, matching_child_states[i]->name),
-                                                              tp->name,
-                                                              get_qualified_pair_name(aut, tp->target->name, other_child, get_initial_state(other_child)->name));
+                                                                strdup(tp->name),
+                                                                get_qualified_pair_name(aut, tp->target->name, other_child, get_initial_state(other_child)->name));
               add_transition_record(sq, tr);
             }
           }
@@ -115,9 +117,9 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
           //add transition [(sptr, childst), tp->name, (tp(sptr), childst)] for any childst
           for (state_ptr childst = child->states; childst != NULL; childst = childst->next) {
             transition_record_ptr tr = make_transition_record(
-                                       get_qualified_pair_name(aut, tp->source->name, child, childst->name),
-                                       tp->name,
-                                       get_qualified_pair_name(aut, tp->target->name, child, childst->name));
+                                                              get_qualified_pair_name(aut, tp->source->name, child, childst->name),
+                                                              strdup(tp->name),
+                                                              get_qualified_pair_name(aut, tp->target->name, child, childst->name));
             add_transition_record(sq, tr);
           }
 
@@ -143,8 +145,8 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
           char* target_name = tp->target->name;
           for (state_ptr rootst = aut->states; rootst != NULL; rootst = rootst->next) {
             transition_record_ptr tr = make_transition_record(get_qualified_pair_name(aut, rootst->name, child, childst->name),
-                                   tp->name,
-                                   get_qualified_pair_name(aut, rootst->name, child, target_name));
+                                                              strdup(tp->name),
+                                                              get_qualified_pair_name(aut, rootst->name, child, target_name));
             add_transition_record(sq, tr);
           }
         }
@@ -157,7 +159,7 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
   assert(collect_incidence_lists(sq)); //needed, don't remove
 
   //*** At this stage sq is the unreduced square product. Let's reduce it. ***
-  mark_states_with_root_active_actions(aut, sq); //???
+  mark_states_with_root_active_actions(aut, sq);
   mark_reachable_marked(sq);
   //todo - usun
 
@@ -165,8 +167,9 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
   //a teraz przepisac?
   //todo - recursive call and cleanup
 
-
-  return sq;
+  automaton_ptr reduced = remove_unmarked_states(sq);
+  free_automaton(sq);
+  return reduced;
 }
 
 int main(int argc, char **argv) {
@@ -207,15 +210,13 @@ int main(int argc, char **argv) {
   display_automaton(red);
   printf("\n\n\n");
 
-  automaton_ptr rred = remove_unmarked_states(red);
   network_to_dot(red, "reduced.dot");
-  network_to_dot(rred, "rreduced.dot");  
 
-  //cleanup
+  /* //cleanup */
+
   for (int i = 0; i < actr-1; ++i) free_automaton(autos[i]);
   free_synchro_array(sarr);
-  free(red);
-  free(rred);  
+  free_automaton(red);
 
-  printf("\nDone.\n"); 
+  printf("\nDone.\n");
 }
