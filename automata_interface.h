@@ -119,10 +119,12 @@ void free_automaton(automaton_ptr aut);
 
 state_ptr get_state_by_name(automaton_ptr aut, char* state_name);
 
-/* Returns state_name preceded by the pointer aut and "::". */
+/* Returns a string with state_name preceded by the pointer aut and maybe
+   something else (look up the source). */
 char* get_qualified_state_name(automaton_ptr aut, char* state_name);
 
-/* Returns a concatenation of qualified_state_names with "--". */
+/* Returns a concatenation of qualified_state_names with something else 
+   (look up the source). */
 char* get_qualified_pair_name(automaton_ptr auta, char* state_namea,
                               automaton_ptr autb, char* state_nameb);
 
@@ -175,9 +177,14 @@ void clear_all_states(automaton_ptr aut);
 void clear_all_states_in_network(automaton_ptr net);
 
 /* Given an automaton aut marks those states from which a state
-   already marked is reachable. Recursive. (TODO)*/
+   already marked is reachable. Recursive. */
 void mark_reachable_marked(automaton_ptr aut);
 
+/* Self-explanatory name. Recursive. */
+void mark_reachable_from_state(state_ptr sptr);
+
+void mark_reachable_from_initial(automaton_ptr aut);
+  
 /* Returns a fresh automaton that contains only the
    (copies) of the marked states of aut and transitions. */
 automaton_ptr remove_unmarked_states(automaton_ptr aut);

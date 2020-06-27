@@ -44,7 +44,7 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
   if (aut->work_links == NULL) {
     sq = get_fresh_automaton();
     sq->states = copy_state_list(aut->states);
-    sq->transition_records = aut->transition_records; //ew. skopiuj
+    sq->transition_records = aut->transition_records; //ew. skopiuj - TODO: raczej skopiuj
     assert(collect_incidence_lists(sq));
     //sq->transition_records = NULL; //TODO - przesun to do cleanupu, ale tylko dla liści (moze zamarkuj liscie?)
 
@@ -183,7 +183,7 @@ int main(int argc, char **argv) {
   synchro_array_ptr sarr = read_synchro_array(argv[argc-1]);
 
   printf("synchro array\n");
-  for(int i = 0; i < sarr->ctr; ++i) printf("%s\n", sarr->actions[i]);
+  for(int i = 0; i < sarr->ctr; ++i) printf("%s\n", (char*) sarr->actions[i]);
 
   /* read automata */
   while (true) {
@@ -209,14 +209,18 @@ int main(int argc, char **argv) {
   printf("\n\n\n");
   display_automaton(red);
   printf("\n\n\n");
-
+  mark_reachable_from_initial(red);
+  automaton_ptr cleaned = remove_unmarked_states(red);
+  
   network_to_dot(red, "reduced.dot");
+  network_to_dot(cleaned, "cleaned.dot");
 
   /* //cleanup */
 
   for (int i = 0; i < actr-1; ++i) free_automaton(autos[i]);
   free_synchro_array(sarr);
   free_automaton(red);
+  free_automaton(cleaned);
 
   printf("\nDone.\n");
 }

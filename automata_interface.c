@@ -83,7 +83,7 @@ bool is_action_local(automaton_ptr aut, char* act_name, synchro_array_ptr sarr) 
   /* Note: this is inefficient, caching or precomputing is needed. */
   bool is_local = true;
 
-  if (!cstring_array_contains(sarr->actions, sarr->ctr, act_name)) return true;
+  if (!cstring_array_contains((char**) sarr->actions, sarr->ctr, act_name)) return true;
 
   sync_link_ptr sl = aut->work_links;
   automaton_ptr neighbour = NULL;
@@ -139,8 +139,8 @@ void clear_all_states_in_network(automaton_ptr net) {
 }
 
 void mark_reachable_marked(automaton_ptr aut) {
-
-  //todo later: make a proper wrapper for dynamic structs
+  
+  //TODO later: use the proper wrapper for dynamic structs
   int marked_ctr = 0;
   int INIT_ARR_SIZE = 1000;
   int scapacity = INIT_ARR_SIZE;
@@ -151,9 +151,10 @@ void mark_reachable_marked(automaton_ptr aut) {
   for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next) {
     if (is_state_marked(sptr)) {
       if (marked_ctr >= scapacity) {
-        grow_ref_array(&scapacity, sizeof(state_ptr), (void**) &stt);
+        grow_ref_array(&scapacity, (void**) &stt);
       }
       stt[marked_ctr++] = sptr;
+
     }
   }
 
@@ -165,7 +166,7 @@ void mark_reachable_marked(automaton_ptr aut) {
       state_ptr state_in_preimage = iptr->source;
       if (!is_state_marked(state_in_preimage)) {
           if (marked_ctr >= scapacity) {
-            grow_ref_array(&scapacity, sizeof(state_ptr), (void**) &stt);
+            grow_ref_array(&scapacity, (void**) &stt);
           }
           stt[marked_ctr++] = state_in_preimage;
           mark_state(state_in_preimage);
@@ -175,6 +176,17 @@ void mark_reachable_marked(automaton_ptr aut) {
   }
 
    free(stt);
+}
+
+void mark_reachable_from_state(state_ptr sptr) {
+  mark_state(sptr);
+  for (transition_ptr tp = sptr->outgoing; tp != NULL; tp = tp->next) {
+    if (!is_state_marked(tp->target)) mark_reachable_from_state(tp->target);
+  }
+}
+
+void mark_reachable_from_initial(automaton_ptr aut) {
+  mark_reachable_from_state(get_initial_state(aut));
 }
 
 automaton_ptr remove_unmarked_states(automaton_ptr aut) {
@@ -242,7 +254,7 @@ void clear_network(automaton_ptr net) {
 }
 
 void free_automaton(automaton_ptr aut) {
-
+  
   state_ptr st = aut->states;
   state_ptr nexts = NULL;
   transition_ptr tp,tnxt = NULL;
@@ -492,7 +504,7 @@ bool automaton_knows_transition(automaton_ptr aut, char* trans_name, synchro_arr
 
   for (transition_record_ptr ptr = aut->transition_records; ptr != NULL; ptr = ptr->next) {
     if (!strcmp(ptr->name, trans_name) &&
-        (sarr == NULL || cstring_array_contains(sarr->actions, sarr->ctr, trans_name))) return true;
+        (sarr == NULL || cstring_array_contains((char**) sarr->actions, sarr->ctr, trans_name))) return true;
   }
 
   return false;
@@ -503,6 +515,8 @@ state_ptr* get_states_with_enabled(automaton_ptr aut, char* trans_name, int* asi
   int SYNCTRANSIZE = 100;
   int scapacity = SYNCTRANSIZE;
 
+  //TODO later: use proper wrappers for dynamic structures
+
   state_ptr* stt = malloc(sizeof(SYNCTRANSIZE * sizeof(state_ptr)));
 
   *asize = 0;
@@ -510,7 +524,7 @@ state_ptr* get_states_with_enabled(automaton_ptr aut, char* trans_name, int* asi
     for (transition_ptr tptr = sptr->outgoing; tptr != NULL; tptr = tptr->next) {
       if (!strcmp(trans_name, tptr->name)) {
         if ((*asize) >= scapacity) {
-          grow_ref_array(&scapacity, sizeof(state_ptr), (void**) &stt);
+          grow_ref_array(&scapacity, (void**) &stt);
         }
         stt[(*asize)++] = sptr;
         break;
@@ -534,7 +548,7 @@ void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd, synchro_array_p
   }
   if (!common) return;
 
-  int SYNCINITSIZE = 10;
+  int SYNCINITSIZE = 1000; 
   sync_link_ptr new_connection = malloc(sizeof(sync_link));
   if (!new_connection) {
     perror("sync_automata_one_way: mem allocation error");
@@ -552,7 +566,7 @@ void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd, synchro_array_p
 
     if (automaton_knows_transition(fst, ptr->name, sarr)) {
       if (new_connection->sync_action_ctr == new_connection->sync_action_capacity - 1) {
-	grow_ref_array(&new_connection->sync_action_capacity, sizeof(char*), (void**)&new_connection->sync_action_names);
+	grow_ref_array(&new_connection->sync_action_capacity, (void**)&new_connection->sync_action_names);
       }
       new_connection->sync_action_names[(new_connection->sync_action_ctr)++] = strndup(ptr->name, MAXTOKENLENGTH);
     }

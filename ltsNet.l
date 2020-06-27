@@ -1,4 +1,4 @@
-%option noyywrap yylineno
+%option noyywrap yylineno nounput noinput
 
 %x comment
 
