@@ -138,7 +138,7 @@ void clear_all_states_in_network(automaton_ptr net) {
 
 }
 
-void mark_reachable_marked(automaton_ptr aut) {
+void mark_reaching_marked(automaton_ptr aut) {
   
   //TODO later: use the proper wrapper for dynamic structs
   int marked_ctr = 0;

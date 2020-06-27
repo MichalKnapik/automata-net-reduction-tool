@@ -178,7 +178,7 @@ void clear_all_states_in_network(automaton_ptr net);
 
 /* Given an automaton aut marks those states from which a state
    already marked is reachable. Recursive. */
-void mark_reachable_marked(automaton_ptr aut);
+void mark_reaching_marked(automaton_ptr aut);
 
 /* Self-explanatory name. Recursive. */
 void mark_reachable_from_state(state_ptr sptr);

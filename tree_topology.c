@@ -49,7 +49,10 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
     //sq->transition_records = NULL; //TODO - przesun to do cleanupu, ale tylko dla liści (moze zamarkuj liscie?)
 
     return sq;
-  } else sq = get_fresh_automaton();
+  } else {
+    sq = get_fresh_automaton();
+    
+  }
 
   //* an internal node *
 
@@ -160,16 +163,21 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
 
   //*** At this stage sq is the unreduced square product. Let's reduce it. ***
   mark_states_with_root_active_actions(aut, sq);
-  mark_reachable_marked(sq);
-  //todo - usun
+  mark_reaching_marked(sq);
+  automaton_ptr reduced = remove_unmarked_states(sq);
+  mark_reachable_from_initial(reduced);
+  automaton_ptr reduced_without_unreachables = remove_unmarked_states(reduced);
+  free_automaton(reduced);
+  
 
   //todo - labelings
   //a teraz przepisac?
+
+  free_automaton(sq);
+
   //todo - recursive call and cleanup
 
-  automaton_ptr reduced = remove_unmarked_states(sq);
-  free_automaton(sq);
-  return reduced;
+  return reduced_without_unreachables;
 }
 
 int main(int argc, char **argv) {
@@ -209,18 +217,14 @@ int main(int argc, char **argv) {
   printf("\n\n\n");
   display_automaton(red);
   printf("\n\n\n");
-  mark_reachable_from_initial(red);
-  automaton_ptr cleaned = remove_unmarked_states(red);
-  
   network_to_dot(red, "reduced.dot");
-  network_to_dot(cleaned, "cleaned.dot");
 
   /* //cleanup */
 
   for (int i = 0; i < actr-1; ++i) free_automaton(autos[i]);
   free_synchro_array(sarr);
   free_automaton(red);
-  free_automaton(cleaned);
+
 
   printf("\nDone.\n");
 }
