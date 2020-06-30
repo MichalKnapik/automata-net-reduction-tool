@@ -115,6 +115,9 @@ transition_record_ptr make_transition_record(char* src_name, char* act_name, cha
 
 void add_transition_record(automaton_ptr aut, transition_record_ptr tr);
 
+/* This is a deep strdup-ed copy; transition records of aut_dest should be NULL. */
+void copy_transition_records(automaton_ptr aut_dest, automaton_ptr aut_src);
+
 void free_automaton(automaton_ptr aut);
 
 state_ptr get_state_by_name(automaton_ptr aut, char* state_name);
@@ -142,8 +145,8 @@ void add_automaton_to_network(automaton_ptr net, automaton_ptr new_automaton, sy
 /* The string trname is not copied via strdup. */
 transition_ptr make_transition(char* trname);
 
-/* Returns true iff aut has registered trans_name as an action label and (trans_name is in sarr
-or sarr is NULL. */
+/* Returns true iff aut is NULL or (aut has registered trans_name as an action label and (trans_name 
+   is in sarr or sarr is NULL). */
 bool automaton_knows_transition(automaton_ptr aut, char* trans_name, synchro_array_ptr sarr);
 
 /* Returns an array of references to the states of aut labeled with trans_name.

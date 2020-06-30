@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+
 #include "automata_interface.h"
 #include "tools.h"
 #include "tree_topology.h"
@@ -36,7 +37,7 @@ void make_subtree(automaton_ptr aut) {
 
 }
 
-automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
+automaton_ptr reduce_net(automaton_ptr aut, automaton_ptr father, synchro_array_ptr sarr) {
 
   automaton_ptr sq = NULL;
 
@@ -44,14 +45,16 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
   if (aut->work_links == NULL) {
     sq = get_fresh_automaton();
     sq->states = copy_state_list(aut->states);
-    sq->transition_records = aut->transition_records; //ew. skopiuj - TODO: raczej skopiuj
+    copy_transition_records(sq, aut);
     assert(collect_incidence_lists(sq));
-    //sq->transition_records = NULL; //TODO - przesun to do cleanupu, ale tylko dla liści (moze zamarkuj liscie?)
-
     return sq;
   } else {
+    //* recursive call *
+    for (sync_link_ptr slp = aut->work_links; slp != NULL; slp = slp->next) {
+      automaton_ptr reduced_child = reduce_net(slp->other, aut, sarr);
+      slp->other = reduced_child;
+    }    
     sq = get_fresh_automaton();
-    
   }
 
   //* an internal node *
@@ -59,7 +62,6 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
   //--- first make the states of the product ---
 
   //the initial state
-
   add_state(sq, strdup("init"));
 
   //the product states
@@ -67,7 +69,7 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
   while (slp != NULL) { //for each link...
     automaton_ptr child = slp->other;
 
-    //...make the states of its square product with the root
+    //...make the states of square its product with the root
     for (state_ptr rst = aut->states; rst != NULL; rst = rst->next)
       for (state_ptr otst = child->states; otst != NULL; otst = otst->next) {
         add_state(sq, get_qualified_pair_name(aut, rst->name, child, otst->name));
@@ -80,7 +82,6 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
   slp = aut->work_links;
   while (slp != NULL) {
     automaton_ptr child = slp->other;
-
     transition_record_ptr tr = make_transition_record(strdup("init"), strdup("epsilon"),
                                                       get_qualified_pair_name(aut, aut->states->name,
                                                                               child, child->states->name));
@@ -116,28 +117,42 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
           free(matching_child_states);
 
         } else if (is_action_local(aut, tp->name, sarr)) {
-          //handle a local transition of the root:
-          //add transition [(sptr, childst), tp->name, (tp(sptr), childst)] for any childst
-          for (state_ptr childst = child->states; childst != NULL; childst = childst->next) {
-            transition_record_ptr tr = make_transition_record(
-                                                              get_qualified_pair_name(aut, tp->source->name, child, childst->name),
-                                                              strdup(tp->name),
-                                                              get_qualified_pair_name(aut, tp->target->name, child, childst->name));
-            add_transition_record(sq, tr);
-          }
+          //handle a possibly local transition of the root, but first check
+	  //if it is really local or maybe synchronises with root's father
 
-        }
+	  if (false && automaton_knows_transition(father, tp->name, sarr)) { //tp->name syncs with aut's father
+	    //todo - error somewhere
+	    //aut and aut's root synchronise over tp->name
+	    //add transition [(sptr, childst), tp->name, (init)] for any childst
+	    for (state_ptr childst = child->states; childst != NULL; childst = childst->next) {
+	      transition_record_ptr tr = make_transition_record(get_qualified_pair_name(aut, tp->source->name, child, childst->name),
+								strdup(tp->name),
+								get_initial_state(sq)->name);
+	      add_transition_record(sq, tr);
+	    }
+	  }
+	  else { //tp->name is really local
+	    //add transition [(sptr, childst), tp->name, (tp(sptr), childst)] for any childst
+	    for (state_ptr childst = child->states; childst != NULL; childst = childst->next) {
+	      transition_record_ptr tr = make_transition_record(get_qualified_pair_name(aut, tp->source->name, child, childst->name),
+								strdup(tp->name),
+								get_qualified_pair_name(aut, tp->target->name, child, childst->name));
+	      add_transition_record(sq, tr);
+	    }
+	  }
+
+	}
 
         slp = slp->next;
       }
 
     }
-
+ 
   }
 
   //2b. handle local transitions of each child
   //    self-note: do not optimize it by merging with the above cases
-  //    (this might be horrible, but it's even worse if added above; prefer more clarity)
+  //    (this might be horrible, but it's even worse if added above)
   for (slp = aut->work_links; slp != NULL; slp = slp->next) { //for each link...
     automaton_ptr child = slp->other;
     for (state_ptr childst = child->states; childst != NULL; childst = childst->next) { //...take the child's state...
@@ -162,20 +177,20 @@ automaton_ptr reduce_net(automaton_ptr aut, synchro_array_ptr sarr) {
   assert(collect_incidence_lists(sq)); //needed, don't remove
 
   //*** At this stage sq is the unreduced square product. Let's reduce it. ***
+  
   mark_states_with_root_active_actions(aut, sq);
   mark_reaching_marked(sq);
   automaton_ptr reduced = remove_unmarked_states(sq);
   mark_reachable_from_initial(reduced);
   automaton_ptr reduced_without_unreachables = remove_unmarked_states(reduced);
   free_automaton(reduced);
-  
 
-  //todo - labelings
-  //a teraz przepisac?
+  //todo - labelings, and maybe rewrites
 
+  //cleanup: remove results of recursive calls and square product
+  for (sync_link_ptr slp = aut->work_links; slp != NULL; slp = slp->next)
+    free_automaton(slp->other);
   free_automaton(sq);
-
-  //todo - recursive call and cleanup
 
   return reduced_without_unreachables;
 }
@@ -205,7 +220,7 @@ int main(int argc, char **argv) {
 
   printf("\nsaving the last automaton to zero.dot\n");
 
-  network_to_dot(autos[actr-2], "net.dot");
+  network_to_dot(autos[actr - 2], "net.dot");
 
   make_subtree(autos[0]);
   display_network(autos[0]);
@@ -213,18 +228,20 @@ int main(int argc, char **argv) {
   working_topology_to_dot(autos[0], "sync.dot");
 
   //test
-  automaton_ptr red = reduce_net(autos[0], sarr);
+  automaton_ptr red = reduce_net(autos[0], NULL, sarr);
+  
   printf("\n\n\n");
   display_automaton(red);
+
+  
   printf("\n\n\n");
   network_to_dot(red, "reduced.dot");
 
-  /* //cleanup */
+  //cleanup
 
-  for (int i = 0; i < actr-1; ++i) free_automaton(autos[i]);
+  for (int i = 0; i < actr - 1; ++i) free_automaton(autos[i]);
   free_synchro_array(sarr);
   free_automaton(red);
-
 
   printf("\nDone.\n");
 }

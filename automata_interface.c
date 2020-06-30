@@ -110,6 +110,22 @@ void add_transition_record(automaton_ptr aut, transition_record_ptr tr) {
 
 }
 
+void copy_transition_records(automaton_ptr aut_dest, automaton_ptr aut_src) {
+  //todo - blad tutaj
+  assert(aut_dest->transition_records == NULL);
+  for (transition_record_ptr trp = aut_src->transition_records; trp != NULL; trp = trp->next) {
+    printf("%s %s %s\n", strndup(trp->source, MAXTOKENLENGTH), strndup(trp->name, MAXTOKENLENGTH),
+							   strndup(trp->target, MAXTOKENLENGTH));
+    printf("copying from %p\n", aut_src);
+    add_transition_record(aut_dest, make_transition_record(strndup(trp->source, MAXTOKENLENGTH),
+							   strndup(trp->name, MAXTOKENLENGTH),
+							   strndup(trp->target, MAXTOKENLENGTH)));
+    printf("done\n");
+  }
+  printf("\n");
+
+}
+
 void mark_state(state_ptr spt) {
   spt->marked = true;
 }
@@ -141,6 +157,7 @@ void clear_all_states_in_network(automaton_ptr net) {
 void mark_reaching_marked(automaton_ptr aut) {
   
   //TODO later: use the proper wrapper for dynamic structs
+
   int marked_ctr = 0;
   int INIT_ARR_SIZE = 1000;
   int scapacity = INIT_ARR_SIZE;
@@ -260,6 +277,7 @@ void free_automaton(automaton_ptr aut) {
   transition_ptr tp,tnxt = NULL;
 
   while (st != NULL) {
+
     nexts = st->next;
     free(st->name);
 
@@ -400,6 +418,7 @@ char* get_qualified_state_name(automaton_ptr aut, char* state_name) {
   char* state_str = (char*) calloc(MAXTOKENLENGTH, sizeof(char));
   snprintf(state_str, MAXTOKENLENGTH, "%p_%s", aut, state_name);
 
+  
   return state_str;
 }
 
@@ -502,6 +521,8 @@ transition_ptr make_transition(char* trname) {
 
 bool automaton_knows_transition(automaton_ptr aut, char* trans_name, synchro_array_ptr sarr) {
 
+  if (aut == NULL) return false;
+
   for (transition_record_ptr ptr = aut->transition_records; ptr != NULL; ptr = ptr->next) {
     if (!strcmp(ptr->name, trans_name) &&
         (sarr == NULL || cstring_array_contains((char**) sarr->actions, sarr->ctr, trans_name))) return true;
@@ -512,10 +533,10 @@ bool automaton_knows_transition(automaton_ptr aut, char* trans_name, synchro_arr
 
 state_ptr* get_states_with_enabled(automaton_ptr aut, char* trans_name, int* asize) {
 
+  //TODO later: use proper wrappers for dynamic structures
+
   int SYNCTRANSIZE = 100;
   int scapacity = SYNCTRANSIZE;
-
-  //TODO later: use proper wrappers for dynamic structures
 
   state_ptr* stt = malloc(sizeof(SYNCTRANSIZE * sizeof(state_ptr)));
 
