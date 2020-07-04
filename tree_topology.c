@@ -84,7 +84,7 @@ automaton_ptr reduce_net(automaton_ptr aut, automaton_ptr father, synchro_array_
     automaton_ptr child = slp->other;
     transition_record_ptr tr = make_transition_record(strdup("init"), strdup("epsilon"),
                                                       get_qualified_pair_name(aut, aut->states->name,
-                                                                              child, child->states->name));
+									      child, child->states->name));
     add_transition_record(sq, tr);
     slp = slp->next;
   }
@@ -120,14 +120,14 @@ automaton_ptr reduce_net(automaton_ptr aut, automaton_ptr father, synchro_array_
           //handle a possibly local transition of the root, but first check
 	  //if it is really local or maybe synchronises with root's father
 
-	  if (false && automaton_knows_transition(father, tp->name, sarr)) { //tp->name syncs with aut's father
-	    //todo - error somewhere
+	  if (automaton_knows_transition(father, tp->name, sarr)) { //tp->name syncs with aut's father
+
 	    //aut and aut's root synchronise over tp->name
 	    //add transition [(sptr, childst), tp->name, (init)] for any childst
 	    for (state_ptr childst = child->states; childst != NULL; childst = childst->next) {
 	      transition_record_ptr tr = make_transition_record(get_qualified_pair_name(aut, tp->source->name, child, childst->name),
 								strdup(tp->name),
-								get_initial_state(sq)->name);
+								strdup(get_initial_state(sq)->name));
 	      add_transition_record(sq, tr);
 	    }
 	  }
@@ -229,7 +229,7 @@ int main(int argc, char **argv) {
 
   //test
   automaton_ptr red = reduce_net(autos[0], NULL, sarr);
-  
+
   printf("\n\n\n");
   display_automaton(red);
 

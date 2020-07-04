@@ -26,13 +26,13 @@ state_ptr copy_state_list(state_ptr sptr) {
 
   if (sptr == NULL) return NULL;
 
-  state_ptr bptr = make_state(strndup(sptr->name, MAXTOKENLENGTH));
+  state_ptr bptr = make_state(strdup(sptr->name));
 
   state_ptr cptr = bptr;
   sptr = sptr->next;
 
   while (sptr != NULL) {
-    cptr->next = make_state(strndup(sptr->name, MAXTOKENLENGTH));
+    cptr->next = make_state(strdup(sptr->name));
     cptr = cptr->next;
     sptr = sptr->next;
   }
@@ -111,15 +111,15 @@ void add_transition_record(automaton_ptr aut, transition_record_ptr tr) {
 }
 
 void copy_transition_records(automaton_ptr aut_dest, automaton_ptr aut_src) {
-  //todo - blad tutaj
+
   assert(aut_dest->transition_records == NULL);
   for (transition_record_ptr trp = aut_src->transition_records; trp != NULL; trp = trp->next) {
-    printf("%s %s %s\n", strndup(trp->source, MAXTOKENLENGTH), strndup(trp->name, MAXTOKENLENGTH),
-							   strndup(trp->target, MAXTOKENLENGTH));
+    printf("%s %s %s\n", strdup(trp->source), strdup(trp->name),
+							   strdup(trp->target));
     printf("copying from %p\n", aut_src);
-    add_transition_record(aut_dest, make_transition_record(strndup(trp->source, MAXTOKENLENGTH),
-							   strndup(trp->name, MAXTOKENLENGTH),
-							   strndup(trp->target, MAXTOKENLENGTH)));
+    add_transition_record(aut_dest, make_transition_record(strdup(trp->source),
+							   strdup(trp->name),
+							   strdup(trp->target)));
     printf("done\n");
   }
   printf("\n");
@@ -213,7 +213,7 @@ automaton_ptr remove_unmarked_states(automaton_ptr aut) {
   //first copy marked states
   for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next) {
     if (is_state_marked(sptr)) {
-      add_state(aut_rem, strndup(sptr->name, MAXTOKENLENGTH));
+      add_state(aut_rem, strdup(sptr->name));
     }
   }
 
@@ -224,9 +224,9 @@ automaton_ptr remove_unmarked_states(automaton_ptr aut) {
     src = get_state_by_name(aut, trp->source);
     trgt = get_state_by_name(aut, trp->target);
     if (is_state_marked(src) && is_state_marked(trgt)) {
-      add_transition_record(aut_rem, make_transition_record(strndup(trp->source, MAXTOKENLENGTH),
-                                                            strndup(trp->name, MAXTOKENLENGTH),
-                                                            strndup(trp->target, MAXTOKENLENGTH)));
+      add_transition_record(aut_rem, make_transition_record(strdup(trp->source),
+                                                            strdup(trp->name),
+                                                            strdup(trp->target)));
     }
   }
 
@@ -415,10 +415,10 @@ state_ptr get_state_by_name(automaton_ptr aut, char* state_name) {
 
 char* get_qualified_state_name(automaton_ptr aut, char* state_name) {
 
-  char* state_str = (char*) calloc(MAXTOKENLENGTH, sizeof(char));
-  snprintf(state_str, MAXTOKENLENGTH, "%p_%s", aut, state_name);
+  char* state_str = (char*) malloc(MAXTOKENLENGTH * sizeof(char));
+  sprintf(state_str, "%p_%s", aut, state_name);
+  printf("xx%d\n", strlen(state_str));
 
-  
   return state_str;
 }
 
@@ -427,10 +427,10 @@ char* get_qualified_pair_name(automaton_ptr auta, char* state_namea,
 
   char* snamea = get_qualified_state_name(auta, state_namea);
   char* snameb = get_qualified_state_name(autb, state_nameb);
-  strncat(snamea, "_", MAXTOKENLENGTH);
-  strncat(snamea, snameb, MAXTOKENLENGTH);
+  strcat(snamea, "_");
+  strcat(snamea, snameb);
   free(snameb);
-
+  
   return snamea;
 }
 
@@ -454,8 +454,8 @@ bool collect_incidence_lists(automaton_ptr aut) {
       return false;
     }
 
-    transition_ptr trout = make_transition(strndup(pptr->name, MAXTOKENLENGTH));
-    transition_ptr trin = make_transition(strndup(pptr->name, MAXTOKENLENGTH));
+    transition_ptr trout = make_transition(strdup(pptr->name));
+    transition_ptr trin = make_transition(strdup(pptr->name));
     trout->source = src;
     trin->source = src;
     trout->target = trg;
@@ -538,7 +538,7 @@ state_ptr* get_states_with_enabled(automaton_ptr aut, char* trans_name, int* asi
   int SYNCTRANSIZE = 100;
   int scapacity = SYNCTRANSIZE;
 
-  state_ptr* stt = malloc(sizeof(SYNCTRANSIZE * sizeof(state_ptr)));
+  state_ptr* stt = malloc(SYNCTRANSIZE * sizeof(state_ptr));
 
   *asize = 0;
   for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next) {
@@ -589,7 +589,7 @@ void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd, synchro_array_p
       if (new_connection->sync_action_ctr == new_connection->sync_action_capacity - 1) {
 	grow_ref_array(&new_connection->sync_action_capacity, (void**)&new_connection->sync_action_names);
       }
-      new_connection->sync_action_names[(new_connection->sync_action_ctr)++] = strndup(ptr->name, MAXTOKENLENGTH);
+      new_connection->sync_action_names[(new_connection->sync_action_ctr)++] = strdup(ptr->name);
     }
 
   }
@@ -667,7 +667,8 @@ void copy_work_links(automaton_ptr aut) {
     lptr->sync_action_names = malloc(link->sync_action_capacity * sizeof(char*));
     lptr->next = NULL;
 
-    memcpy(lptr->sync_action_names, link->sync_action_names, link->sync_action_ctr * sizeof(char*));
+    for (int i = 0; i < link->sync_action_ctr; ++i) lptr->sync_action_names[i] = strdup(link->sync_action_names[i]);
+
   }
 
   aut->work_links = bgnptr;

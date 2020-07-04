@@ -37,7 +37,7 @@ synchro_array_ptr read_synchro_array(char* fname) {
     if (arr->ctr == arr->capacity - 1) 
       grow_ref_array(&arr->capacity, (void**) &arr->actions);
 
-    arr->actions[(arr->ctr)++] = strndup(buffer, MAXTOKENLENGTH);
+    arr->actions[(arr->ctr)++] = strdup(buffer);
   }
 
   if (!fin) fclose(fin);
@@ -56,7 +56,6 @@ void free_synchro_array(synchro_array_ptr sarr) {
 
 void* grow_ref_array(int* capacity, void** arr) {
 
-  //maybe move to realloc?
   void* new_act_array = malloc( 2 * (*capacity)  * sizeof(void*) );
   if (new_act_array == NULL) {
     perror("array growth error");

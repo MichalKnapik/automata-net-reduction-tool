@@ -26,7 +26,7 @@ TRANSITIONS "transitions"
 {STATES} { return STATES; }
 {TRANSITIONS} { return TRANSITIONS; }
 {ALPHASTRING} {
-               yylval.stringval = strndup(yytext, MAXTOKENLENGTH);
+               yylval.stringval = strdup(yytext);
                return ALPHASTRING;
               }
 
