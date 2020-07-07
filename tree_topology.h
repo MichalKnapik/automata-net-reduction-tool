@@ -15,5 +15,6 @@ void make_subtree(automaton_ptr aut);
    run make_subtree(aut) first. Returns a pointer to the new reduced product. */
 automaton_ptr reduce_net(automaton_ptr aut, automaton_ptr father, synchro_array_ptr sarr);
 
+
 #endif
 

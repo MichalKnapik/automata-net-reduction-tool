@@ -174,6 +174,8 @@ automaton_ptr reduce_net(automaton_ptr aut, automaton_ptr father, synchro_array_
     }
   }
 
+  relabel_net(sq);  
+
   assert(collect_incidence_lists(sq)); //needed, don't remove
 
   //*** At this stage sq is the unreduced square product. Let's reduce it. ***
@@ -185,63 +187,10 @@ automaton_ptr reduce_net(automaton_ptr aut, automaton_ptr father, synchro_array_
   automaton_ptr reduced_without_unreachables = remove_unmarked_states(reduced);
   free_automaton(reduced);
 
-  //todo - labelings, and maybe rewrites
-
   //cleanup: remove results of recursive calls and square product
   for (sync_link_ptr slp = aut->work_links; slp != NULL; slp = slp->next)
     free_automaton(slp->other);
   free_automaton(sq);
 
   return reduced_without_unreachables;
-}
-
-int main(int argc, char **argv) {
-
-  unsigned int ctr = 0;
-  unsigned int ASIZE = 10000;
-  unsigned int actr = 0;
-  automaton_ptr autos[ASIZE];
-
-  /* read synchro array */
-  synchro_array_ptr sarr = read_synchro_array(argv[argc-1]);
-
-  printf("synchro array\n");
-  for(int i = 0; i < sarr->ctr; ++i) printf("%s\n", (char*) sarr->actions[i]);
-
-  /* read automata */
-  while (true) {
-    if (ctr == argc - 2) break;
-    autos[actr++] = read_automaton(argv[++ctr]);
-    collect_incidence_lists(autos[actr-1]);
-    if (ctr > 1) add_automaton_to_network(autos[0], autos[actr-1], sarr);
-  }
-
-  display_network(autos[0]);
-
-  printf("\nsaving the last automaton to zero.dot\n");
-
-  network_to_dot(autos[actr - 2], "net.dot");
-
-  make_subtree(autos[0]);
-  display_network(autos[0]);
-
-  working_topology_to_dot(autos[0], "sync.dot");
-
-  //test
-  automaton_ptr red = reduce_net(autos[0], NULL, sarr);
-
-  printf("\n\n\n");
-  display_automaton(red);
-
-  
-  printf("\n\n\n");
-  network_to_dot(red, "reduced.dot");
-
-  //cleanup
-
-  for (int i = 0; i < actr - 1; ++i) free_automaton(autos[i]);
-  free_synchro_array(sarr);
-  free_automaton(red);
-
-  printf("\nDone.\n");
 }

@@ -115,6 +115,9 @@ transition_record_ptr make_transition_record(char* src_name, char* act_name, cha
 
 void add_transition_record(automaton_ptr aut, transition_record_ptr tr);
 
+/* Relabels the states of the automaton to numbers, starting from 0. */ 
+void relabel_net(automaton_ptr aut);
+
 /* This is a deep strdup-ed copy; transition records of aut_dest should be NULL. */
 void copy_transition_records(automaton_ptr aut_dest, automaton_ptr aut_src);
 
@@ -152,6 +155,8 @@ bool automaton_knows_transition(automaton_ptr aut, char* trans_name, synchro_arr
 /* Returns an array of references to the states of aut labeled with trans_name.
    Memory management: clear only the array, don't free the states. */
 state_ptr* get_states_with_enabled(automaton_ptr aut, char* trans_name, int* asize);
+
+int count_states(automaton_ptr aut);
 
 void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd, synchro_array_ptr sarr);
 

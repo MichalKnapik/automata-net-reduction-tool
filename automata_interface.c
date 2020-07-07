@@ -113,16 +113,8 @@ void add_transition_record(automaton_ptr aut, transition_record_ptr tr) {
 void copy_transition_records(automaton_ptr aut_dest, automaton_ptr aut_src) {
 
   assert(aut_dest->transition_records == NULL);
-  for (transition_record_ptr trp = aut_src->transition_records; trp != NULL; trp = trp->next) {
-    printf("%s %s %s\n", strdup(trp->source), strdup(trp->name),
-							   strdup(trp->target));
-    printf("copying from %p\n", aut_src);
-    add_transition_record(aut_dest, make_transition_record(strdup(trp->source),
-							   strdup(trp->name),
-							   strdup(trp->target)));
-    printf("done\n");
-  }
-  printf("\n");
+  for (transition_record_ptr trp = aut_src->transition_records; trp != NULL; trp = trp->next) 
+    add_transition_record(aut_dest, make_transition_record(strdup(trp->source), strdup(trp->name), strdup(trp->target)));
 
 }
 
@@ -417,7 +409,6 @@ char* get_qualified_state_name(automaton_ptr aut, char* state_name) {
 
   char* state_str = (char*) malloc(MAXTOKENLENGTH * sizeof(char));
   sprintf(state_str, "%p_%s", aut, state_name);
-  printf("xx%d\n", strlen(state_str));
 
   return state_str;
 }
@@ -556,6 +547,13 @@ state_ptr* get_states_with_enabled(automaton_ptr aut, char* trans_name, int* asi
   return stt;
 }
 
+int count_states(automaton_ptr aut) {
+
+  int ctr = 0;
+  for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next) ++ctr;
+
+  return ctr;
+}
 
 void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd, synchro_array_ptr sarr) {
 
@@ -703,6 +701,30 @@ automaton_ptr read_automaton(char* fname) {
   return retv;
 }
 
+void relabel_net(automaton_ptr aut) {
+
+  //todo: this is quite bad and really (~n^3 w.r.t. number of states...)
+  //inefficient; redesign but maybe when rewriting in something else than C
+  //quick fix for now: maybe add a fast map from state names to ints and
+  //use binary search?
+  
+  //todo
+  
+  int ctr = 0;
+  for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next, ++ctr) {
+    for (transition_record_ptr tptr = aut->transition_records; tptr != NULL; tptr = tptr->next) {
+      if (!strcmp(sptr->name, tptr->source)) {
+	sprintf(tptr->source, "%d", ctr);
+      }
+      if (!strcmp(sptr->name, tptr->target)) {
+	sprintf(tptr->target, "%d", ctr);
+      }
+    }
+    sprintf(sptr->name, "%d", ctr);
+  }
+
+}
+
 void automaton_to_dot(automaton_ptr aut, int automaton_ctr, FILE* dotf) {
 
   fprintf(dotf, "subgraph cluster%d {\n", automaton_ctr);
@@ -784,3 +806,4 @@ bool working_topology_to_dot(automaton_ptr net, char* dotfname) {
   if (dotf != NULL) fclose(dotf);
   return true;
 }
+
