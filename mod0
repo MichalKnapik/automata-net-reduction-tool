@@ -1,0 +1,6 @@
+states
+0
+1
+transitions
+(0, beep, 0)
+(0, heep, 1)
