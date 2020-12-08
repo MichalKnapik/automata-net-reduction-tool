@@ -15,4 +15,13 @@ Now run *make dot* to produce three pdfs:
 2. *sync.pdf* is the synchronisation topology of the network.
 3. *reduced.pdf* is the result of sum-of-squares reduction of the network.
 
+# Here's the result
+
+* *net.pdf* 
+![net.pdf](https://github.com/MichalKnapik/automata-net-reduction-tool/blob/master/images/net.png)
+
+* *sync.pdf*
+![sync.pdf](https://github.com/MichalKnapik/automata-net-reduction-tool/blob/master/images/sync.png)
+
+* *reduced.pdf*
 ![reduced.pdf](https://github.com/MichalKnapik/automata-net-reduction-tool/blob/master/images/reduced.png)
