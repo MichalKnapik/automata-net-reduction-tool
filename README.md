@@ -18,10 +18,16 @@ Now run *make dot* to produce three pdfs:
 # Here's the result
 
 * *net.pdf* 
+
+
 ![net.pdf](https://github.com/MichalKnapik/automata-net-reduction-tool/blob/master/images/net.png)
 
 * *sync.pdf*
+
+
 ![sync.pdf](https://github.com/MichalKnapik/automata-net-reduction-tool/blob/master/images/sync.png)
 
 * *reduced.pdf*
+
+
 ![reduced.pdf](https://github.com/MichalKnapik/automata-net-reduction-tool/blob/master/images/reduced.png)
