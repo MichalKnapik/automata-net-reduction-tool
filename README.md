@@ -1,7 +1,7 @@
 # Live-tree automata reduction tool
 
 This is a prototype of a tool for verifying big networks of synchronising automata. The synchronisation structure of the network should form a tree.
-The companion paper is [here](https://arxiv.org/pdf) **TODO**
+The companion paper is [here](https://arxiv.org/pdf/2012.04739.pdf) 
 
 # Compiling and usage
 
