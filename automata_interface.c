@@ -555,6 +555,24 @@ int count_states(automaton_ptr aut) {
   return ctr;
 }
 
+int count_transitions(automaton_ptr aut) {
+  automaton_ptr curr_aut = aut;
+  int arcs = 0;
+
+  while (curr_aut != NULL) {
+
+    transition_record_ptr trans = curr_aut->transition_records;
+    while (trans != NULL) {
+      ++arcs;
+      trans = trans->next;
+    }
+
+    curr_aut = curr_aut->next;
+  }
+
+  return arcs;
+}
+
 void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd, synchro_array_ptr sarr) {
 
   bool common = false;

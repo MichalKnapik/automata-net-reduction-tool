@@ -1,4 +1,5 @@
 states
-0
+1
 transitions
-(0, open, 0)
+(1, open1 ,1)
+(1, open2 ,1)

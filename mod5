@@ -1,9 +1,9 @@
 states
-0
+3
 1
 2
 transitions
-(0, R ,1)
+(3, R ,1)
 (1, L ,2)
-(1, chooseL, 0)
-(2, chooseR, 0)
+(1, chooseL ,3)
+(2, chooseR ,3)

@@ -158,6 +158,8 @@ state_ptr* get_states_with_enabled(automaton_ptr aut, char* trans_name, int* asi
 
 int count_states(automaton_ptr aut);
 
+int count_transitions(automaton_ptr aut);
+
 void sync_automata_one_way(automaton_ptr fst, automaton_ptr snd, synchro_array_ptr sarr);
 
 void sync_automata(automaton_ptr fst, automaton_ptr snd, synchro_array_ptr sarr);
