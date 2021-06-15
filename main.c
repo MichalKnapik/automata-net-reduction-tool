@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
 
   printf("EF-reducing the network...");
   automaton_ptr red = reduce_net(autos[0], NULL, sarr);
-  printf("..the result has %d states.\n", count_states(red));
+  printf("..the result has %d states and %d transitions.\n", count_states(red), count_transitions(red));
 
   if (verbose) {
     printf("Displaying reduced automaton\n");  
