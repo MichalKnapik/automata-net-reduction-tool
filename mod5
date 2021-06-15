@@ -1,9 +1,0 @@
-states
-3
-1
-2
-transitions
-(3, R ,1)
-(1, L ,2)
-(1, chooseL ,3)
-(2, chooseR ,3)

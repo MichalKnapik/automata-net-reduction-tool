@@ -1,6 +1,0 @@
-states
-2
-1
-transitions
-(2, beep ,2)
-(2, heep ,1)
