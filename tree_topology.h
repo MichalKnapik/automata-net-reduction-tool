@@ -12,9 +12,10 @@ void make_subtree(automaton_ptr aut);
 
 /* Reduces the network rooted in aut using the sum-of-squares construction.
    Uses synchronisation topology described by work_links, so you should
-   run make_subtree(aut) first. Returns a pointer to the new reduced product. */
-automaton_ptr reduce_net(automaton_ptr aut, automaton_ptr father, synchro_array_ptr sarr);
-
+   run make_subtree(aut) first. Returns a pointer to the new reduced product. 
+   Set one_shot to false if the network is live-reset, and true if it is one-shot 
+   synchronizing. */
+automaton_ptr reduce_net(automaton_ptr aut, automaton_ptr father, synchro_array_ptr sarr, bool one_shot);
 
 #endif
 

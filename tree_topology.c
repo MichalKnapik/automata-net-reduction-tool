@@ -37,7 +37,7 @@ void make_subtree(automaton_ptr aut) {
 
 }
 
-automaton_ptr reduce_net(automaton_ptr aut, automaton_ptr father, synchro_array_ptr sarr) {
+automaton_ptr reduce_net(automaton_ptr aut, automaton_ptr father, synchro_array_ptr sarr, bool one_shot) {
 
   automaton_ptr sq = NULL;
 
@@ -51,7 +51,7 @@ automaton_ptr reduce_net(automaton_ptr aut, automaton_ptr father, synchro_array_
   } else {
     //* recursive call *
     for (sync_link_ptr slp = aut->work_links; slp != NULL; slp = slp->next) {
-      automaton_ptr reduced_child = reduce_net(slp->other, aut, sarr);
+      automaton_ptr reduced_child = reduce_net(slp->other, aut, sarr, one_shot);
       slp->other = reduced_child;
     }    
     sq = get_fresh_automaton();
@@ -84,12 +84,12 @@ automaton_ptr reduce_net(automaton_ptr aut, automaton_ptr father, synchro_array_
     automaton_ptr child = slp->other;
     transition_record_ptr tr = make_transition_record(strdup("init"), strdup("epsilon"),
                                                       get_qualified_pair_name(aut, aut->states->name,
-									      child, child->states->name));
+						      child, child->states->name));
     add_transition_record(sq, tr);
     slp = slp->next;
   }
 
-  //2. add the non-synchronised transitions of square products
+  //2. add the transitions of square products
   //2a. handle the root's transitions
   for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next) {
     for (transition_ptr tp = sptr->outgoing; tp != NULL; tp = tp->next) {
@@ -100,21 +100,32 @@ automaton_ptr reduce_net(automaton_ptr aut, automaton_ptr father, synchro_array_
 
         if (automaton_knows_transition(child, tp->name, sarr)) {
           //handle a transition synchronised with the child:
-          //add transition [(sptr,s), tp->name, (tp->target,s'), for any initial state s' of any child
-          //(this works for live-reset automata only!)
 
+          //add transition [(sptr,s), tp->name, (tp->target,s'), for any initial state s' of any child if the network
+	  //is live-reset and one-shot transitions as above to all the states s.t. s' != s if the network is single-sync.
           int matching_state_ctr = 0;
           state_ptr* matching_child_states = get_states_with_enabled(child, tp->name, &matching_state_ctr);
+
           for (int i = 0; i < matching_state_ctr; ++i) {
+
             for (sync_link_ptr inner_slp = aut->work_links; inner_slp != NULL; inner_slp = inner_slp->next) {
               automaton_ptr other_child = inner_slp->other;
-              transition_record_ptr tr = make_transition_record(get_qualified_pair_name(aut, tp->source->name, child, matching_child_states[i]->name),
+	      transition_record_ptr tr = NULL;
+	      if (other_child == child && one_shot) { //a special case of single-sync transition
+		tr = make_transition_record(get_qualified_pair_name(aut, tp->source->name, child, matching_child_states[i]->name),
+                                                                strdup(tp->name),
+                                                                get_qualified_pair_name(aut, tp->target->name, other_child, matching_child_states[i]->name));
+	      } else {
+		tr = make_transition_record(get_qualified_pair_name(aut, tp->source->name, child, matching_child_states[i]->name),
                                                                 strdup(tp->name),
                                                                 get_qualified_pair_name(aut, tp->target->name, other_child, get_initial_state(other_child)->name));
+	      }
+	      
               add_transition_record(sq, tr);
             }
+
           }
-          free(matching_child_states);
+          if (matching_child_states != NULL) free(matching_child_states);
 
         } else if (is_action_local(aut, tp->name, sarr)) {
           //handle a possibly local transition of the root, but first check

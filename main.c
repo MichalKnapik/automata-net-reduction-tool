@@ -9,9 +9,10 @@
 extern int optind;
 
 void print_usage(void) {
-  printf("Usage: tree_reduce -m module1 module2 ... modulen -s sync_actions [-d] [-v]\n\
-       Where: -d saves the network in net.dot, the synchronisation scheme in sync.dot,\n\
-       and the EF-reduced product in reduced.dot; -v stands for verbose. \n ");
+  printf("Usage: tree_reduce -m module1 module2 ... modulen -s sync_actions [-d] [-o] [-v]\n\
+where: \n-d saves the network in net.dot, the synchronisation scheme in sync.dot, and the EF-reduced product in reduced.dot;\
+\n-o means that the synchronizations follow the single-sync rule while by default the automata are live-reset;\
+ \n-v stands for verbose. \n ");
 }
 
 int main(int argc, char **argv) {
@@ -21,10 +22,11 @@ int main(int argc, char **argv) {
   int module_ind_init = -1;
   int module_ind_end = -1;
   bool todot = false;
-  bool verbose = false;  
+  bool verbose = false;
+  bool one_shot = false;    
 
   //todo: this might be a bad way of using getopt
-  while ((c = getopt(argc, argv, "msdv")) != -1) {
+  while ((c = getopt(argc, argv, "msdvo")) != -1) {
 
     switch (c) {
     case 'm':
@@ -42,6 +44,9 @@ int main(int argc, char **argv) {
       break;
     case 'v':
       verbose = true;
+      break;
+    case 'o':
+      one_shot = true;
       break;      
     default:
       exit(EXIT_FAILURE);
@@ -101,7 +106,7 @@ int main(int argc, char **argv) {
   }
 
   printf("EF-reducing the network...");
-  automaton_ptr red = reduce_net(autos[0], NULL, sarr);
+  automaton_ptr red = reduce_net(autos[0], NULL, sarr, one_shot);
   printf("..the result has %d states and %d transitions.\n", count_states(red), count_transitions(red));
 
   if (verbose) {
