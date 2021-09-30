@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
   }
 
   if (todot) {
-    printf("Exporting the automata to zero.dot.\n");
+    printf("Exporting the automata to net.dot.\n");
     network_to_dot(autos[0], "net.dot");
   }
 
@@ -116,7 +116,7 @@ int main(int argc, char **argv) {
   }
 
   if (todot) {
-    printf("Exporting the EF-reduced product to zero.dot.\n");
+    printf("Exporting the EF-reduced product to reduced.dot.\n");
     network_to_dot(red, "reduced.dot");
   }
 
