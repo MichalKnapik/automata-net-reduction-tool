@@ -201,7 +201,7 @@ automaton_ptr remove_unmarked_states(automaton_ptr aut);
 
 /* Marks in aut those states where an action with label known to
    root is executable. Used in pruning of square products. */
-void mark_states_with_root_active_actions(automaton_ptr root, automaton_ptr aut);
+void mark_states_with_root_active_actions(automaton_ptr root, automaton_ptr aut, synchro_array_ptr sarr);
 
 //----- tools for marking automata in networks/topologies ------
 

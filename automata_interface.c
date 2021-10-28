@@ -228,10 +228,12 @@ automaton_ptr remove_unmarked_states(automaton_ptr aut) {
   return aut_rem;
 }
 
-void mark_states_with_root_active_actions(automaton_ptr root, automaton_ptr aut) {
+void mark_states_with_root_active_actions(automaton_ptr root, automaton_ptr aut, synchro_array_ptr sarr) {
   for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next) {
     for (transition_ptr tp = sptr->outgoing; tp != NULL; tp = tp->next) {
-      if (automaton_knows_transition(root, tp->name, NULL)) {
+      //!is_action_local(root, tp->name, sarr)
+      // TODO
+      if (automaton_knows_transition(root, tp->name, NULL) && !is_action_local(root, tp->name, sarr)) {
         mark_state(sptr);
         break;
       }

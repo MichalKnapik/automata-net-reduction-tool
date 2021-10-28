@@ -37,7 +37,7 @@ void make_subtree(automaton_ptr aut) {
 
 }
 
-automaton_ptr reduce_net(automaton_ptr aut, automaton_ptr father, synchro_array_ptr sarr, bool one_shot) {
+automaton_ptr reduce_net(automaton_ptr aut, automaton_ptr father, synchro_array_ptr sarr, bool one_shot, bool no_deadlock_reduction) {
 
   automaton_ptr sq = NULL;
 
@@ -51,7 +51,7 @@ automaton_ptr reduce_net(automaton_ptr aut, automaton_ptr father, synchro_array_
   } else {
     //* recursive call *
     for (sync_link_ptr slp = aut->work_links; slp != NULL; slp = slp->next) {
-      automaton_ptr reduced_child = reduce_net(slp->other, aut, sarr, one_shot);
+      automaton_ptr reduced_child = reduce_net(slp->other, aut, sarr, one_shot, no_deadlock_reduction);
       slp->other = reduced_child;
     }    
     sq = get_fresh_automaton();
@@ -105,9 +105,7 @@ automaton_ptr reduce_net(automaton_ptr aut, automaton_ptr father, synchro_array_
 	  //is live-reset and one-shot transitions as above to all the states s.t. s' != s if the network is single-sync.
           int matching_state_ctr = 0;
           state_ptr* matching_child_states = get_states_with_enabled(child, tp->name, &matching_state_ctr);
-
           for (int i = 0; i < matching_state_ctr; ++i) {
-
             for (sync_link_ptr inner_slp = aut->work_links; inner_slp != NULL; inner_slp = inner_slp->next) {
               automaton_ptr other_child = inner_slp->other;
 	      transition_record_ptr tr = NULL;
@@ -189,9 +187,11 @@ automaton_ptr reduce_net(automaton_ptr aut, automaton_ptr father, synchro_array_
 
   assert(collect_incidence_lists(sq)); //needed, don't remove
 
+  if (no_deadlock_reduction) return sq;
+
   //*** At this stage sq is the unreduced square product. Let's reduce it. ***
   
-  mark_states_with_root_active_actions(aut, sq);
+  mark_states_with_root_active_actions(aut, sq, sarr);
   mark_reaching_marked(sq);
   automaton_ptr reduced = remove_unmarked_states(sq);
   mark_reachable_from_initial(reduced);
