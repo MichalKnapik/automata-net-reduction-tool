@@ -111,6 +111,11 @@ int main(int argc, char **argv) {
 
   printf("EF-reducing the network...");
   automaton_ptr red = reduce_net(autos[0], NULL, sarr, one_shot, no_deadlock_reduction);
+
+  if (red == NULL) {
+    printf("..the result is empty. Check the network!\n");
+    return 1;
+  }
   printf("..the result has %d states and %d transitions.\n", count_states(red), count_transitions(red));
 
   if (verbose) {
@@ -132,4 +137,5 @@ int main(int argc, char **argv) {
   printf("Done.\n");
   if (todot) printf("Run 'make dot' to produce pdfs from dot files.\n");
 
+  return 0;
 }

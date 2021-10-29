@@ -232,7 +232,6 @@ void mark_states_with_root_active_actions(automaton_ptr root, automaton_ptr aut,
   for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next) {
     for (transition_ptr tp = sptr->outgoing; tp != NULL; tp = tp->next) {
 
-      // TODO - debug this part
       if (automaton_knows_transition(root, tp->name, NULL) && !is_action_local(root, tp->name, sarr)) {
         mark_state(sptr);
         break;

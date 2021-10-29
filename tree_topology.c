@@ -52,6 +52,7 @@ automaton_ptr reduce_net(automaton_ptr aut, automaton_ptr father, synchro_array_
     //* recursive call *
     for (sync_link_ptr slp = aut->work_links; slp != NULL; slp = slp->next) {
       automaton_ptr reduced_child = reduce_net(slp->other, aut, sarr, one_shot, no_deadlock_reduction);
+      if (reduced_child == NULL) return sq;
       slp->other = reduced_child;
     }    
     sq = get_fresh_automaton();
@@ -190,11 +191,17 @@ automaton_ptr reduce_net(automaton_ptr aut, automaton_ptr father, synchro_array_
   if (no_deadlock_reduction) return sq;
 
   //*** At this stage sq is the unreduced square product. Let's reduce it. ***
+
   
   mark_states_with_root_active_actions(aut, sq, sarr);
   mark_reaching_marked(sq);
+
   automaton_ptr reduced = remove_unmarked_states(sq);
+
+  if (count_states(reduced) == 0) return NULL; // debug
+
   mark_reachable_from_initial(reduced);
+
   automaton_ptr reduced_without_unreachables = remove_unmarked_states(reduced);
   free_automaton(reduced);
 
