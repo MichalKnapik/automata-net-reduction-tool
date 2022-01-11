@@ -3,7 +3,7 @@ states
 1
 2
 transitions
-(0, R ,1)
-(1, L ,2)
+(0, RR ,1)
+(1, LL ,2)
 (1, chooseR, 0)
 (2, chooseL, 0)
