@@ -192,7 +192,6 @@ automaton_ptr reduce_net(automaton_ptr aut, automaton_ptr father, synchro_array_
 
   //*** At this stage sq is the unreduced square product. Let's reduce it. ***
 
-  
   mark_states_with_root_active_actions(aut, sq, sarr);
   mark_reaching_marked(sq);
 
