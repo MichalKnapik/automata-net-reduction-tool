@@ -1,5 +1,4 @@
-#ifndef TREE_TOPOLOGY_H
-#define TREE_TOPOLOGY_H
+#pragma once
 
 #include "common.h"
 #include "tools.h"
@@ -16,6 +15,3 @@ void make_subtree(automaton_ptr aut);
    Set one_shot to false if the network is live-reset, and true if it is one-shot 
    synchronizing. */
 automaton_ptr reduce_net(automaton_ptr aut, automaton_ptr father, synchro_array_ptr sarr, bool one_shot, bool deadlock_reduction);
-
-#endif
-

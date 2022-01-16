@@ -1,5 +1,4 @@
-#ifndef AUTOMATA_INTERFACE_H
-#define AUTOMATA_INTERFACE_H
+#pragma once
 
 #include "common.h"
 #include "tools.h"
@@ -232,5 +231,3 @@ void automaton_to_dot(automaton_ptr aut, int automaton_ctr, FILE* dotf);
 bool network_to_dot(automaton_ptr net, char* dotfname);
 
 bool working_topology_to_dot(automaton_ptr net, char* dotfname);
-
-#endif

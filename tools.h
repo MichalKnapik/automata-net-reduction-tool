@@ -1,5 +1,4 @@
-#ifndef TOOLS_H
-#define TOOLS_H
+#pragma once
 
 /* The initial size of growing/synchro_array. */
 #define AINITSIZE 1000
@@ -31,5 +30,3 @@ void* insert_and_grow_maybe(growable_array_ptr* arr, void* elt);
 bool contains_ref_array(void** arr, int size, void* elt);
 
 bool cstring_array_contains(char** arr, int size, char* elt);
-
-#endif

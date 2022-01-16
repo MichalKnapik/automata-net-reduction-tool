@@ -1,9 +1,6 @@
-#ifndef COMMON_H
-#define COMMON_H
+#pragma once
 
 #define false 0
 #define true 1
 #define bool char
 #define MAXTOKENLENGTH 500
-
-#endif
