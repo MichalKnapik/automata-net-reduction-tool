@@ -240,7 +240,7 @@ void mark_states_with_root_active_actions(automaton_ptr root, automaton_ptr aut,
 	  && (
 	  !is_action_local(root, tp->name, sarr)
 	  ||
-	  (root == global_root) /* here's the change */
+	  (root == global_root) /* here's the change! */
 	  )) {
         mark_state(sptr);
         break;
