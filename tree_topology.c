@@ -7,6 +7,8 @@
 #include "tools.h"
 #include "tree_topology.h"
 
+extern automaton_ptr global_root;
+
 void make_subtree(automaton_ptr aut) {
 
   mark_automaton(aut);
@@ -188,7 +190,7 @@ automaton_ptr reduce_net(automaton_ptr aut, automaton_ptr father, synchro_array_
 
   assert(collect_incidence_lists(sq)); //needed, don't remove
 
-  if (no_deadlock_reduction) return sq;
+  if (no_deadlock_reduction) return sq; // for debugging purposes only; leaks memory
 
   //*** At this stage sq is the unreduced square product. Let's reduce it. ***
 

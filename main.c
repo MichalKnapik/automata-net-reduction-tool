@@ -7,6 +7,7 @@
 #include "tree_topology.h"
 
 extern int optind;
+automaton_ptr global_root;
 
 void print_usage(void) {
   printf("Usage: tree_reduce -m module1 module2 ... modulen -s sync_actions [-d] [-o] [-v]\n\
@@ -85,32 +86,33 @@ int main(int argc, char **argv) {
     if (actr > 0) add_automaton_to_network(autos[0], autos[actr], sarr);
     ++ctr; ++actr;
   }
+  global_root = autos[0];
 
   printf("Read network of %d automata.\n", module_ind_end - module_ind_init + 1);
   if (verbose) {
-    display_network(autos[0]);
+    display_network(global_root);
     printf("\n");
   }
 
   if (todot) {
     printf("Exporting the automata to net.dot.\n");
-    network_to_dot(autos[0], "net.dot");
+    network_to_dot(global_root, "net.dot");
   }
 
   printf("Computing synchronisation subtree rooted in the first automaton.\n");
-  make_subtree(autos[0]);
+  make_subtree(global_root);
   if (verbose) {
     printf("Displaying network:");
-    display_network(autos[0]);
+    display_network(global_root);
     printf("\n");    
   }
   if (todot) {
     printf("Exporting the synchronisation scheme to sync.dot.\n");    
-    working_topology_to_dot(autos[0], "sync.dot");
+    working_topology_to_dot(global_root, "sync.dot");
   }
 
   printf("EF-reducing the network...");
-  automaton_ptr red = reduce_net(autos[0], NULL, sarr, one_shot, no_deadlock_reduction);
+  automaton_ptr red = reduce_net(global_root, NULL, sarr, one_shot, no_deadlock_reduction);
 
   if (red == NULL) {
     printf("..the result is empty. Check the network!\n");

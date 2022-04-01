@@ -2,11 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+
 #include "automata_interface.h"
 #include "ltsNet.tab.h"
 #include "tools.h"
 
 automaton_ptr root = NULL;
+extern automaton_ptr global_root;
 
 automaton_ptr get_fresh_automaton(void) {
 
@@ -148,7 +150,7 @@ void clear_all_states_in_network(automaton_ptr net) {
 
 void mark_reaching_marked(automaton_ptr aut) {
   
-  //TODO later: use the proper wrapper for dynamic structs
+  //TODO later: use a proper wrapper for dynamic structs
 
   int marked_ctr = 0;
   int INIT_ARR_SIZE = 1000;
@@ -232,7 +234,14 @@ void mark_states_with_root_active_actions(automaton_ptr root, automaton_ptr aut,
   for (state_ptr sptr = aut->states; sptr != NULL; sptr = sptr->next) {
     for (transition_ptr tp = sptr->outgoing; tp != NULL; tp = tp->next) {
 
-      if (automaton_knows_transition(root, tp->name, NULL) && !is_action_local(root, tp->name, sarr)) {
+      // a quick change - don't reduce synchronized but non-local transitions of the root
+      // (added for consistency with the paper)
+      if (automaton_knows_transition(root, tp->name, NULL)
+	  && (
+	  !is_action_local(root, tp->name, sarr)
+	  ||
+	  (root == global_root) /* here's the change */
+	  )) {
         mark_state(sptr);
         break;
       }
