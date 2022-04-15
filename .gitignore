@@ -2,3 +2,9 @@
 *.dSYM
 lex.yy.c
 tree_reduce
+net.dot
+net.pdf
+reduced.dot
+reduced.pdf
+sync.dot
+sync.pdf
