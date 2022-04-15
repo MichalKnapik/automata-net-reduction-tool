@@ -1,0 +1,4 @@
+*.tab.*
+*.dSYM
+lex.yy.c
+tree_reduce
